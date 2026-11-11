@@ -454,16 +454,46 @@ becomes useful after code execution is achieved another way
 (it would then make subsequent updates friction-free). The SD
 menu path alone cannot bootstrap a modified image.
 
-Viable bootstrap directions (all need hardware access):
+### Card ISP / sysboot shell path (mapped 2026-11-10, head part)
 
-1. sysboot serial shell: strings show an `isp <firmware bin>`
-   command plus `nanderase`, `read`, `fill` - a factory burn
-   path that likely skips the signature gate. Needs UART pads.
-2. USB ISP mode (iCatch FRM protocol): on the V50 family this
-   flashes/dumps without file verification; the "charge-only"
-   USB spec may still expose it via the button combo.
-3. RAM-patch the running verifier over UART (sysboot `fill`),
-   then flash a modded image via the normal menu path.
+The sysboot serial shell carries a full factory command set.
+Confirmed command/help strings:
+
+- `isp <firmware.bin>` or `isp <*.BRN>` - "To do isp from card",
+  burns a file to flash. Prints `ISP File %s`, `FwWrite start`,
+  `FW%d write %u/%u KB`, `***** Card ISP complete!*****`.
+- `boot <filename>` (example `boot D:\5000TEST.BIN`) - loads a
+  file from SD into DRAM and jumps to it (`Boot File %s 0x%x`,
+  `boot Addr = %x`). Execute arbitrary code without flashing:
+  a softmod path if the shell is reachable.
+- Memory/file primitives: `dump`, `fill`, `search`, `read`
+  (file to DRAM), `write` (file to card), `regdump`, `ver`.
+- Raw flash primitives: `nanderase`, `nanderase all`,
+  `nanddetect`, `nandpr/nandpw` (physical page r/w),
+  `nandlr/nandrr` (logical page r/w), `rsvrd/rsvwr/rsver`
+  (reserved-block r/w/erase), `nandRawCWrite`, plus the SPI
+  mirror set (`spipr/spipw/spier`, `spiFwWrite`).
+
+Signature status: NONE found. The burn function (~0x80051xxx)
+validates the SUNP BURN FILE/HDR 1/2/3 structure and the HDR2
+`060916:build<sign>a?/b?` record names (which are structural,
+not cryptographic checks), then writes and does a readback
+compare - `verify %d %d`, `verify err at ofs=0x%x`, `FW
+verified`, `RawC verified`. There are no RSA/SHA/mbedtls
+strings anywhere in head. `NAND rsv header err(sig)` refers to
+the reserved-block header signature field, unrelated to update
+files. The `isp` path almost certainly burns unsigned/modified
+images; `boot` almost certainly runs unsigned binaries.
+
+Unverified, needs hardware: whether the UART pins are exposed
+(teardown), how the shell is entered (auto at boot? key combo?),
+whether `isp` accepts FPUPDATE.DAT directly or wants the split
+.BRN parts, and whether `boot` loads at a fixed DRAM address
+(sysboot docs suggest e.g. 0xa1000000).
+
+Other bootstrap directions (still open): the USB ISP/FRM button
+combo from the V50 family, and RAM-patching the running verifier
+via the shell's `fill` once UART is up.
 
 `iab_generate_signature_check_data` (~0x80309100) strings:
 `iab_signature_verify`, `iab_get_public_key`,
