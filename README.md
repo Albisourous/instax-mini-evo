@@ -1,13 +1,13 @@
 # instax-mini-evo
 
-Open-source tooling to repurpose the **Fujifilm instax mini Evo** as a
-standalone digital camera running modified software. It unpacks the stock
-firmware, applies camera-centric mods, and repacks a flashable image —
-one command, no dependencies beyond Python 3.
+Open-source tooling to repurpose the Fujifilm instax mini Evo as a
+standalone digital camera running modified software. It unpacks the
+stock firmware, applies camera mods, and repacks a flashable image in
+one command, with no dependencies beyond Python 3.
 
 > **BRICK RISK.** Flashing modified firmware can permanently brick the
 > camera. There is no confirmed recovery path on this model. The build
-> output is **not tested on hardware**. You proceed entirely at your own
+> output is not tested on hardware. You proceed entirely at your own
 > risk. See `docs/research.md`.
 
 ## Requirements
@@ -28,24 +28,24 @@ into parts, applies the default mods, and writes
 
 ## Installing the result
 
-1. Copy `out/FPUPDATE_MOD.DAT` to the **root** of a FAT32 microSD card.
+1. Copy `out/FPUPDATE_MOD.DAT` to the root of a FAT32 microSD card.
 2. Rename it to `FPUPDATE.DAT`.
-3. Insert the card, power the camera on, open **MENU → FIRMWARE UPGRADE**.
-4. Cross your fingers — see the brick warning above.
+3. Insert the card, power the camera on, open MENU, FIRMWARE UPGRADE.
+4. Accept the brick risk and confirm.
 
 ## What the default mod does
 
-`printer-boot-skip` — the instax printer mechanism does a self-check
+`printer-boot-skip`: the instax printer mechanism runs a self-check
 during boot (film-door GPIO poll, "Need to Film Out" recovery,
-auto-eject). If the mechanism is jammed, missing, or you simply never
-want the printer in the boot path, this mod skips that whole block with
-a single-instruction patch in the PreBoot-1 stage. Runtime printing is
-untouched. Full details in `tools/mods.py` and `docs/research.md`.
+auto-eject). If the mechanism is jammed, missing, or you never want the
+printer in the boot path, this mod skips that block with a
+single-instruction patch in the PreBoot-1 stage. Runtime printing is
+untouched. Details in `tools/mods.py` and `docs/research.md`.
 
 ## Other commands
 
 ```sh
-./instax-evo inspect    # SUNP BURN FILE headers + physical layout
+./instax-evo inspect    # SUNP BURN FILE headers and physical layout
 ./instax-evo unpack     # carve firmware into out/carved/ parts
 ./instax-evo catalog    # extract all A:/B: partition files to out/
 ```
@@ -61,26 +61,26 @@ python3 tools/fat.py    get out/carved/B.img USER_RES/PRINTER.BIN out.bin
 python3 tools/fat.py    put out/carved/B.img USER_RES/PRINTER.BIN new.bin
 ```
 
-- `tools/sunp.py` — SUNP BURN FILE parser + repack logic
-- `tools/fatfs.py` / `tools/fat.py` — FAT16 read/write inside the images
-- `tools/snappy.py` — Snappy codec for SNAP-compressed SFN/SST resources
-- `tools/mods.py` — the mod table (add your own patches here)
+- `tools/sunp.py`: SUNP BURN FILE parser and repack logic
+- `tools/fatfs.py`, `tools/fat.py`: FAT16 read/write inside the images
+- `tools/snappy.py`: Snappy codec for SNAP-compressed SFN/SST resources
+- `tools/mods.py`: the mod table, add your own patches here
 
 ## Verified
 
-On stock v1.09: carve → repack produces a **byte-identical** file; both
-FAT16 images mount on macOS/Linux; the default mod changes exactly one
-byte and disassembles sanely. Nothing has been flashed to a device.
+On stock v1.09, carve then repack produces a byte-identical file. Both
+FAT16 images mount on macOS and Linux. The default mod changes exactly
+one byte and disassembles sanely. Nothing has been flashed to a device.
 
 ## Layout
 
-- `instax-evo` — the one-command entry point
-- `firmware/` — stock `FPUPDATE.DAT` (gitignored, auto-downloaded)
-- `tools/` — unpack/inspect/mod/repack utilities
-- `docs/research.md` — full reverse-engineering notes
-- `out/` — carved parts, extracted files, build output (gitignored)
+- `instax-evo`: the one-command entry point
+- `firmware/`: stock `FPUPDATE.DAT` (gitignored, auto-downloaded)
+- `tools/`: unpack, inspect, mod, repack utilities
+- `docs/research.md`: full reverse-engineering notes
+- `out/`: carved parts, extracted files, build output (gitignored)
 
-## Credit / prior art
+## Credit and prior art
 
 Format family documented by
 [mheistermann/spca-fun](https://github.com/mheistermann/spca-fun)

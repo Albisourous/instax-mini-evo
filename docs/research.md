@@ -16,22 +16,22 @@
 Firmware download URL (serves raw .DAT despite .html name):
 `https://www.instax.com/mini_evo/en/support/firmware/firmware.html`
 
-## FPUPDATE.DAT structure (v1.09) — fully mapped
+## FPUPDATE.DAT structure (v1.09), fully mapped
 
 Top-level header at 0x0 (little-endian u32s after 16-byte magic+pad):
 
 ```
-0x10 file_size   0x05cd1850 — offset of the signature trailer, NOT the
+0x10 file_size   0x05cd1850 = offset of the signature trailer, NOT the
                  whole file (trailer = 0x504 bytes of high-entropy data
                  at EOF; likely a signature/checksum, contents unknown)
-0x14 off_hdr1    0x000b1a00   SUNP BURN HDR 1 — mostly zeros; field[3]=
+0x14 off_hdr1    0x000b1a00   SUNP BURN HDR 1: mostly zeros; field[3]=
                  0xffffffff, field[6]=0x04800000/0x00f00000 (matches the
-                 A:/B: image sizes — probably a burn descriptor)
-0x18 off_hdr2    0x000b2a00   SUNP BURN HDR 2 — 2 x 128B entries XOR 0x7A
+                 A:/B: image sizes, probably a burn descriptor)
+0x18 off_hdr2    0x000b2a00   SUNP BURN HDR 2: 2 x 128B entries XOR 0x7A
                  ("060916:build<sign>a?", "060916:build<sign>b?")
 0x1c off_code    0x057b2b20   main firmware (MIPS32, ThreadX)
 0x20 unk_zero    0
-0x24 off_hdr3    0x05ccf920   SUNP BURN HDR 3 — 71 x 0x70 backup filenames
+0x24 off_hdr3    0x05ccf920   SUNP BURN HDR 3: 71 x 0x70 backup filenames
 0x1fc            nonzero      checksum word (per V50 prior art; unverified)
 ```
 
@@ -53,13 +53,13 @@ code, not nested images. carve→repack round-trips byte-identically.
 
 ## Filesystem contents
 
-- A:\RO_RES — ~517 files: sensor calibration (COLD.BIN, DEFPIX*, SHDTBL,
-  CLBRANK*, LSC), IQ tables, fonts (*.SFN — RIFF/SPFN, stored
+- A:\RO_RES: ~517 files: sensor calibration (COLD.BIN, DEFPIX*, SHDTBL,
+  CLBRANK*, LSC), IQ tables, fonts (*.SFN, RIFF/SPFN, stored
   UNCOMPRESSED in v1.09; no SNAP streams found), 295 UI PNGs, WAVs,
   pattern data (incl. LZ4 dir)
-- B:\ — USER_RES\PRINTER.BIN (192B "FIF0" index → ERRORLOG.BIN,
-  UIPRINT0.BIN), UIDATA.BIN (272B index → UIBOOT00/UIOPEN/UISETUPO),
-  LOGDATA.BIN, UIBTRES.BIN, PRT_HIS\PRTCHK.LST
+- B:\: USER_RES\PRINTER.BIN (192B "FIF0" index pointing at ERRORLOG.BIN,
+  UIPRINT0.BIN), UIDATA.BIN (272B index pointing at UIBOOT00/UIOPEN/
+  UISETUPO), LOGDATA.BIN, UIBTRES.BIN, PRT_HIS\PRTCHK.LST
 
 ## Main firmware (code part, base 0x80000000)
 
@@ -68,13 +68,13 @@ code, not nested images. carve→repack round-trips byte-identically.
   `PowerOnCtrlThread` (entry 0x8015fe44) → staged `PreBoot(1|2|3)`
   dispatcher at 0x8015f394.
 - PreBoot 1 (0x8015f410): registers change-detect handlers, loads
-  `B:\USER_RES\UIBOOT00.BIN` via fn 0x80223164, then — gated by flag
-  byte 0x805817b4 — polls GPIO 0xb0001038 bit3 (film/door sensor),
+  `B:\USER_RES\UIBOOT00.BIN` via fn 0x80223164, then (gated by flag
+  byte 0x805817b4) polls GPIO 0xb0001038 bit3 (film/door sensor),
   ~500ms timeout → "*** Timeout, Need to Film Out" → sets
   NeedToFilmOut flag (state+0xc bit 0x200000) → ColdData recovery /
   auto-eject path at 0x8015f8f4.
 - `printer-boot-skip` mod (tools/mods.py) makes the flag check at
-  0x8015f5e0 unconditional — skips the entire film-mech boot block.
+  0x8015f5e0 unconditional, skipping the entire film-mech boot block.
 - Printer errors are named enum strings registered by a table function
   at ~0x249484 (DPS_PAPER_JAM, DPS_HARDWARE_COVER_OPEN, ...). Runtime
   print-job path untouched by the mod.
@@ -123,11 +123,11 @@ Linouth's iCatch-V50-Playground (SPCA6500/Akaso V50):
 
 - Does the updater verify the signature trailer at `file_size`..EOF, or
   the 0x1FC checksum word, or neither? (V50 ignores its checksum;
-  unverified here — repacked images are produced but NOT flash-tested.)
+  unverified here; repacked images are produced but NOT flash-tested.)
 - Does the ISP button combo exist on the mini Evo, and which button?
 - Which runtime paths still check printer status (print-job gating)?
 - Printer board: separate MCU almost certainly (DPS_* status names are
   protocol-side error labels); where does the boot-time cover check
   read its state besides GPIO 0xb0001038?
-- HDR1 field[6] = A:/B: image sizes — is field[3]=0xffffffff a "burn
+- HDR1 field[6] = A:/B: image sizes. Is field[3]=0xffffffff a "burn
   everything" marker?

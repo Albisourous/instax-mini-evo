@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""instax-evo - one-command firmware pipeline for the Fujifilm instax
+"""instax-evo: one-command firmware pipeline for the Fujifilm instax
 mini Evo digicam project.
 
-    ./instax-evo build    unpack -> mod -> repack a ready-to-use
+    ./instax-evo build    unpack, mod and repack a ready-to-use
                           FPUPDATE.DAT in out/
     ./instax-evo unpack   only carve the stock firmware into parts
     ./instax-evo inspect  show the SUNP BURN FILE layout
     ./instax-evo catalog  extract A:/B: partition files to out/
 
-Output of `build`: out/FPUPDATE_MOD.DAT - copy it to the root of a
-FAT32 microSD card, insert, then use the camera's FIRMWARE UPGRADE menu.
+`build` writes out/FPUPDATE_MOD.DAT. Copy it to the root of a FAT32
+microSD card, insert, then use the camera's FIRMWARE UPGRADE menu.
 
 WARNING: flashing a modified firmware image can permanently brick the
 camera. There is no confirmed recovery path for this model. The build
