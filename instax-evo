@@ -108,17 +108,27 @@ def cmd_build():
     pn = {n: (o, s) for n, o, s in sunp.parts(new)}
     po = {n: (o, s) for n, o, s in sunp.parts(old)}
     assert list(pn) == list(po)
+    # the two recomputed integrity fields (see sunp._fix_sums) may
+    # legitimately differ from stock: header u32 @0x1FC and final u32.
+    exempt = set(range(0x1FC, 0x200)) | set(range(len(new) - 4, len(new)))
     for n in pn:
         if n == "code":
             continue
         o1, s1 = pn[n]
         o2, s2 = po[n]
-        assert s1 == s2 and new[o1:o1 + s1] == old[o2:o2 + s2], n
+        assert s1 == s2, n
+        bad = [o1 + i for i in range(s1)
+               if new[o1 + i] != old[o2 + i] and (o1 + i) not in exempt]
+        assert not bad, (n, [hex(x) for x in bad[:8]])
+    fsz = sunp.u32(new, 0x10)
+    assert sunp._word_sum(new[:fsz]) == 0, "0x1FC checksum field wrong"
+    assert sunp._word_sum(new[:len(new) // 4 * 4]) == 0, "tail checksum wrong"
     cn, cs = pn["code"]
     diffs = sum(a != b for a, b in zip(new[cn:cn + cs],
                                        old[cn:cn + cs]))
-    print(f"  layout parses: OK, non-code parts identical, "
-          f"code differs in {diffs} byte(s)")
+    print(f"  layout parses: OK, non-code parts identical "
+          f"(integrity fields recomputed), code differs in "
+          f"{diffs} byte(s)")
 
     print(f"""
 DONE: {out_dat}
@@ -128,8 +138,9 @@ To install:
   2. rename it to FPUPDATE.DAT
   3. insert card, power on, use the FIRMWARE UPGRADE menu
 
-!! BRICK RISK: modified firmware is untested on hardware. The stock
-!! signature trailer is preserved but stale. Proceed at your own risk.
+!! BRICK RISK: modified firmware is untested on hardware. Checksum
+!! fields are recomputed; the 256-byte signature block is preserved
+!! verbatim and its enforcement is unknown. Proceed at your own risk.
 """)
 
 

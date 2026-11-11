@@ -6,10 +6,12 @@ concatenates them in order, and rewrites the top-level header offsets and
 file_size field. Part sizes may differ from the original - all offsets are
 recomputed.
 
-WARNING: the signature/checksum trailer in the 'tail' part is preserved
-verbatim and will be STALE after any modification. On the sibling iCatch
-V50 the updater ignored checksum failures, but on the mini Evo this is
-UNVERIFIED. Flashing a repacked image may permanently brick the camera.
+WARNING: repack recomputes the two u32 checksum anchors (header word
+at 0x1FC and the final word, both tuned so u32 word-sums are 0).
+The ~0x100-byte signature block at file_size is preserved verbatim;
+whether the updater enforces it is still UNKNOWN. If it does, this
+file still gets rejected. Flashing a repacked image may permanently
+brick the camera.
 
 Usage:
     python3 tools/repack.py <carved_dir> <outfile.DAT>

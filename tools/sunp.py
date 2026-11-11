@@ -128,10 +128,17 @@ def build(part_blobs, manifest_order=None):
     """Concatenate part blobs, then rewrite header offsets + file_size.
 
     part_blobs: list of (name, bytes) in file order (as produced by parts()).
-    The last part ('tail') keeps its internal structure; the signature
-    trailer inside it is preserved verbatim and will be STALE after any
-    modification. On the sibling iCatch V50 the updater did not enforce
-    checksumming; whether the mini Evo enforces this trailer is UNKNOWN.
+    The last part ('tail') keeps its internal structure.
+
+    Integrity fields (verified on stock v1.09):
+
+    * u32 at 0x1FC: chosen so the u32 word-sum of out[:file_size] is 0.
+      Same offset the V50's sumpatch maintains. Recomputed here.
+    * last u32 of the file: chosen so the u32 word-sum of the ENTIRE
+      file is 0. Recomputed here.
+    * the ~0x100-byte block at file_size is preserved verbatim; on
+      stock it looks like a signature but the updater contains no
+      crypto references, so its enforcement is UNKNOWN.
     """
     out = bytearray()
     offsets = {}
@@ -149,6 +156,31 @@ def build(part_blobs, manifest_order=None):
     tail = dict(part_blobs)["tail"]
     count = struct.unpack_from("<I", tail, 16)[0]
     sig_rel = HDR_PREAMBLE + count * HDR3_ENTRY
-    struct.pack_into("<I", hdr, 0x10, offsets["tail"] + sig_rel)
+    fsz = offsets["tail"] + sig_rel
+    struct.pack_into("<I", hdr, 0x10, fsz)
     out[:0x200] = hdr
+
+    out = _fix_sums(out, fsz)
     return bytes(out)
+
+
+def _word_sum(buf):
+    return sum(struct.unpack("<%dI" % (len(buf) // 4),
+                             buf[:len(buf) // 4 * 4])) & 0xFFFFFFFF
+
+
+def _fix_sums(out, fsz):
+    """Adjust the 0x1FC field and the final u32 so the u32 word-sums
+    of out[:fsz] and of the whole image are both 0, matching stock."""
+    out = bytearray(out)
+    cur = struct.unpack_from("<I", out, 0x1FC)[0]
+    s = _word_sum(out[:fsz])
+    if s:
+        struct.pack_into("<I", out, 0x1FC, (cur - s) & 0xFFFFFFFF)
+    n = len(out) // 4 * 4
+    s = _word_sum(out[:n])
+    if s:
+        struct.pack_into("<I", out, n - 4,
+                         (struct.unpack_from("<I", out, n - 4)[0] - s)
+                         & 0xFFFFFFFF)
+    return out

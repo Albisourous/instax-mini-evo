@@ -21,9 +21,10 @@ Firmware download URL (serves raw .DAT despite .html name):
 Top-level header at 0x0 (little-endian u32s after 16-byte magic+pad):
 
 ```
-0x10 file_size   0x05cd1850 = offset of the signature trailer, NOT the
-                 whole file (trailer = 0x504 bytes of high-entropy data
-                 at EOF; likely a signature/checksum, contents unknown)
+0x10 file_size   0x05cd1850 = offset of a 256-byte block that looks like
+                 an RSA-2048 signature, followed by a 0x20..0x01 countdown
+                 marker, version string "0.001.000", meta, and a final
+                 checksum word (0x504 bytes total to EOF)
 0x14 off_hdr1    0x000b1a00   SUNP BURN HDR 1: mostly zeros; field[3]=
                  0xffffffff, field[6]=0x04800000/0x00f00000 (matches the
                  A:/B: image sizes, probably a burn descriptor)
@@ -121,9 +122,17 @@ Linouth's iCatch-V50-Playground (SPCA6500/Akaso V50):
 
 ## Open questions
 
-- Does the updater verify the signature trailer at `file_size`..EOF, or
-  the 0x1FC checksum word, or neither? (V50 ignores its checksum;
-  unverified here; repacked images are produced but NOT flash-tested.)
+- CONFIRMED: the updater enforces integrity (camera rejected an
+  8-byte-modified image with a "firmware is broken" style error and
+  powered off safely - it checks BEFORE writing). Checksum scheme
+  decoded: u32 word-sum of fw[:file_size] == 0 (0x1FC field balances
+  it, same offset as V50's sumpatch CRC) and u32 word-sum of the
+  ENTIRE file == 0 (final word balances the trailer). repack now
+  recomputes both. Still open: whether the 256-byte signature block
+  is independently verified - it looks like RSA-2048 and is kept
+  verbatim. If the camera still rejects the fixed image, the sig is
+  real and unforgeable, and the remaining path is patching the
+  verifier in the sysboot (head, loaded at 0x80040000).
 - Does the ISP button combo exist on the mini Evo, and which button?
 - Which runtime paths still check printer status (print-job gating)?
 - Printer board: separate MCU almost certainly (DPS_* status names are
@@ -355,3 +364,25 @@ while idx<9 via `sltiu $v1,$v0,9` at 0x801e1a9c). Parallel
 handlers for the lens index (+0x18) sit at 0x801e19b8 and
 0x801e1b7c with the same wrap pattern; film-wkw leaves them
 alone so lens effects keep all 10 positions.
+
+### Updater / integrity (v1.09, decoded 2026-11-10)
+
+- sysboot ("head" part, 0x0..0xB1A00) loads at 0x80040000; its MIPS
+  code starts at file offset 0x200. It contains the SD-card update
+  routine (large function at VA 0x8004d348) and verify/verify-err
+  strings, but NO md5/sha/rsa/crypto strings.
+- Integrity anchors, both verified to hold on stock v1.09:
+  * u32 @0x1FC: u32 word-sum of fw[0:file_size] == 0
+  * u32 @EOF-4: u32 word-sum of entire file == 0
+  sunp.build() recomputes both via _fix_sums().
+- Trailer at file_size (0x5CD1850): 256-byte high-entropy block
+  (RSA-2048 shape), 32-byte 0x20..0x01 countdown, "0.001.000"
+  version string, meta fields, final checksum word.
+- HDR2 (XOR 0x7A) holds two records named "060916:build<sign>a?"
+  and "060916:build<sign>b?" carrying {offset, size} pairs that
+  exactly describe the A: and B: images - signature-coverage
+  descriptors.
+- hdr3 region lists backup filenames (A:\RO_RES\*.BIN,
+  B:\PRT_HIS\PIMG*.JPG) restored during update.
+- The camera's "broken firmware" rejection happened before any
+  write: the check is a gate, not a verify-after-write.
