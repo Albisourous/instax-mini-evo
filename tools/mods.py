@@ -133,6 +133,22 @@ MODS = {
               "slot6 P5 arg: 5 -> 4 (flat)"),
     ],
 
+    # Extend the capture digital-zoom range. Live preview/capture
+    # zoom maps level 0-9 to a factor via the u16 table at
+    # code 0x489774 (VA 0x80489774): stock geometric curve
+    # 1.00x -> 3.20x in x100 units (1000,1140,...,3200), consumed
+    # by ZoomLevelToFactor at 0x801ba170 (9 call sites). Entry 0
+    # stays 1.00x; entries 1-9 retuned to a geometric 1.00 -> 6.40x
+    # curve (x1.229/step): 1230,1510,1860,2285,2810,3450,4240,5215,
+    # 6400. Same 10 stops, same index bounds - pure data patch, no
+    # code changes. Zooming out below 1x is impossible (no wider
+    # source); 6.4x is deep crop but fine for instax prints.
+    "zoom-6x": [
+        Patch(0x489776, "74040a05be05900676077a08a609fa0a800c",
+              "ce04e6054407ed08fa0a7a0d90105f140019",
+              "zoom table 1-9: 1.14..3.20x -> 1.23..6.40x"),
+    ],
+
     # Optional: bypass the firmware-signature gate. NOT a default
     # mod, and NOT a bootstrap path: the check runs in the
     # INSTALLED firmware before writing, so this patch inside the
@@ -160,7 +176,7 @@ MODS = {
     ],
 }
 
-DEFAULT_MODS = ["printer-boot-skip", "wkw-suite"]
+DEFAULT_MODS = ["printer-boot-skip", "wkw-suite", "zoom-6x"]
 
 
 def apply_mods(code, mod_names=None, strict=False):

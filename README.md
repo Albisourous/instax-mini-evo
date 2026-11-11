@@ -54,6 +54,13 @@ the tint constants are first guesses and the texture mapping on the
 last three positions is unverified, so treat every look as a test
 patch. Lens effects are untouched.
 
+`zoom-6x`: extends the digital zoom range. Stock firmware gives
+the zoom lever 10 stops running 1.0x to 3.2x; this retunes the
+factor table so the same 10 stops run 1.0x to 6.4x. It is a data
+patch on one table, no code changes. Zooming out wider than 1x
+is not possible; deep zoom is a crop of the sensor, so image
+quality at the far end is the tradeoff.
+
 Details in `tools/mods.py` and `docs/research.md`.
 
 ## Other commands
@@ -83,8 +90,10 @@ python3 tools/fat.py    put out/carved/B.img USER_RES/PRINTER.BIN new.bin
 ## Verified
 
 On stock v1.09, carve then repack produces a byte-identical file. Both
-FAT16 images mount on macOS and Linux. The default mods change exactly
-11 bytes and disassemble sanely. Nothing has been flashed to a device.
+FAT16 images mount on macOS and Linux. The default mods change 31 code
+bytes and disassemble sanely. A checksummed modded image was offered to
+the camera once and rejected by the signature gate with no write, so
+nothing modded has ever run on hardware.
 
 ## Layout
 

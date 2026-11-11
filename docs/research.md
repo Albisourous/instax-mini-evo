@@ -383,6 +383,20 @@ handlers for the lens index (+0x18) sit at 0x801e19b8 and
 0x801e1b7c with the same wrap pattern; wkw-suite leaves them
 alone so lens effects keep all 10 positions.
 
+### Digital zoom internals (mapped 2026-11-10)
+
+Capture/preview digital zoom uses a 10-stop table, not motor
+stops: `ZoomLevelToFactor` at 0x801ba170 indexes a u16 table at
+0x80489774 (code 0x489774) and returns entry/10. Stock values
+x100: 1000,1140,1290,1470,1680,1910,2170,2470,2810,3200 =
+geometric 1.00x -> 3.20x (~x1.138/step). Nine call sites. The
+u16 table at 0x804f8270 indexed by a <31 bound is mechanical
+zoom-motor step deltas (shared codebase; mini Evo has a fixed
+lens) and is unrelated. Playback zoom ("DZoom 1-4") is a
+separate path. `zoom-6x` rewrites table entries 1-9 to a
+geometric 1.00 -> 6.40x curve; level 0 stays 1.00x. Zooming
+below 1x is impossible (digital crop only).
+
 ### Updater / integrity (v1.09, decoded 2026-11-10)
 
 - sysboot ("head" part, 0x0..0xB1A00) loads at 0x80040000; its MIPS
