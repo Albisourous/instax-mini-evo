@@ -493,11 +493,24 @@ No RSA/SHA/mbedtls strings exist in head.
 
 Consequence: any route that reaches the USB ISP dispatcher or
 Card ISP burns unsigned images. The V50 family exposed FRM over
-USB without soldering. Untested here: whether the mini Evo USB
-stack accepts vendor requests, needs a mode flag, or hides the
-interface. Fallback remains UART (`fill` can RAM-patch, but no
-`go`/`jump`/`isp`/`boot` command exists, so exec via the shell
-alone is limited).
+USB without soldering. Fallback remains UART (`fill` can
+RAM-patch, but no `go`/`jump`/`isp`/`boot` command exists, so
+exec via the shell alone is limited).
+
+Tested 2026-11-10, hardware:
+
+- Checksummed wkw-suite image via SD menu update: REJECTED with
+  the "firmware is broken" style error, safe power-off, nothing
+  written. Confirms the signature check is real and covers
+  modified content; the two additive sums are not sufficient.
+- USB FRM combos tried with zero enumeration: shutter held +
+  power-on over USB, shutter held while plugging USB on a
+  powered-on camera, playback held + power-on over USB. The
+  port appears charge-only at the hardware level on this model -
+  no iCatch device ever appeared on the host bus.
+
+No-solder entry paths are exhausted. UART teardown is the only
+confirmed-viable door left.
 
 `iab_generate_signature_check_data` (~0x80309100) strings:
 `iab_signature_verify`, `iab_get_public_key`,
