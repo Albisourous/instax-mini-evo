@@ -58,9 +58,35 @@ MODS = {
         Patch(0x15f5e0, "3e004010", "3e000010",
               "beqz $v0 -> b  (always skip film-mech boot block)"),
     ],
+
+    # "Wong Kar-wai" film effect, iteration 1.
+    #
+    # Film effects are parameter combos applied by IQ_FilmEffectModeSet
+    # (0x80360a04) via 8 param-class setters. Effect slot 4 uses
+    # P5 mode 4 + P7 mode 3. P5 writes a tint block at 0x808b2e4c whose
+    # fields feed ISP params 0x2a003 (x) and 0x2a004 (y) through the
+    # apply path at 0x80360f80.
+    #
+    # P5-mode-4 case (vaddr 0x803607fc..0x8036082f) writes:
+    #     x = 0xf6 (246)  -> ISP 0x2a003
+    #     y = 0x08        -> ISP 0x2a004
+    #     tint bytes @0x1c-0x1f = 0
+    #
+    # Exact semantics of x/y are unverified (likely Cb/Cr-domain tint
+    # or hue/saturation gains). v1 deliberately picks a strong warm
+    # shift (x=128, y=64) so the changed effect slot is easy to spot:
+    # cycle the 10 film effects on-camera and note which one changed.
+    # Tune toward the WKW grade (warm orange highlights, cool teal
+    # shadows) on the next iterations once semantics are confirmed.
+    "film-wkw": [
+        Patch(0x36080c, "f6000424", "80000424",
+              "P5-m4 x: 246 -> 128 (ISP 0x2a003)"),
+        Patch(0x360810, "08000324", "40000324",
+              "P5-m4 y: 8 -> 64 (ISP 0x2a004)"),
+    ],
 }
 
-DEFAULT_MODS = ["printer-boot-skip"]
+DEFAULT_MODS = ["printer-boot-skip", "film-wkw"]
 
 
 def apply_mods(code, mod_names=None, strict=False):

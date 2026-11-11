@@ -33,14 +33,23 @@ into parts, applies the default mods, and writes
 3. Insert the card, power the camera on, open MENU, FIRMWARE UPGRADE.
 4. Accept the brick risk and confirm.
 
-## What the default mod does
+## What the default mods do
 
 `printer-boot-skip`: the instax printer mechanism runs a self-check
 during boot (film-door GPIO poll, "Need to Film Out" recovery,
 auto-eject). If the mechanism is jammed, missing, or you never want the
 printer in the boot path, this mod skips that block with a
 single-instruction patch in the PreBoot-1 stage. Runtime printing is
-untouched. Details in `tools/mods.py` and `docs/research.md`.
+untouched.
+
+`film-wkw`: an experimental Wong Kar-wai-inspired film look. It patches
+the color parameters of one stock film-effect slot, so one of the ten
+effects in the dial menu gets a warm, graded tone instead of its stock
+look. Iteration 1: the exact parameter semantics are still being tuned,
+so treat it as a test patch. Cycle through the film effects on the
+camera to find which slot changed.
+
+Details in `tools/mods.py` and `docs/research.md`.
 
 ## Other commands
 

@@ -218,3 +218,54 @@ OS-level BLE pairing should suffice for a custom client.
 - Whether the GATT write is raw [u32 opcode][payload] or has a
   header (len/seq/flags) before the opcode.
 - Endianness/packing of larger payloads and image chunk format.
+
+## Film effect system (v1.09)
+
+Film effects are parameter combos, not LUT files. `View_SetFilmEffect(i)`
+calls `IQ_FilmEffectModeSet` at 0x80360a04, which resets the param
+block and dispatches mode 0..9 through a jump table at 0x804d7e30.
+Mode 0 is NORMAL (no params, everything stays at reset defaults).
+
+Each case calls some of eight param-class setters:
+
+| setter | addr        | writes struct | semantics (partial)                    |
+|--------|-------------|---------------|----------------------------------------|
+| P1     | 0x803604d8  | 0x808b2e14    | small mode flag                        |
+| P2     | 0x80360510  | 0x808b2e1c    | pattern overlay (calls 0x801e3c00)     |
+| P3     | 0x80360614  | 0x808b2e24    | one signed byte param, contrast-like   |
+| P4     | 0x803606a0  | 0x808b2e34    | multi-field gain block                 |
+| P5     | 0x80360770  | 0x808b2e4c    | color tint, feeds ISP 0x2a003/4/6      |
+| P7     | 0x803608e8  | 0x808b2e9c    | small mode + byte param                |
+| P8     | 0x803609ac  | 0x808b2eac    | two u32 params                         |
+
+Effect modes (param values per setter):
+
+| mode | params                    |
+|------|---------------------------|
+| 0    | none (NORMAL)             |
+| 1    | P4=1, P5=1, P7=1          |
+| 2    | P3=1, P4=2, P5=2          |
+| 3    | P3=3, P5=6, P7=5          |
+| 4    | P5=4, P7=3                |
+| 5    | P5=3, P7=2                |
+| 6    | P4=3, P5=5, P7=4          |
+| 7    | P2=2, P8=2                |
+| 8    | P2=1, P8=1                |
+| 9    | P1=1, P2=3                |
+
+P5 is the color-grading knob. Its sub-cases write a tint block:
+flag at +0x10, x at +0x14, y at +0x18, four tint bytes at +0x1c..0x1f.
+The apply path at 0x80360f80 pushes x to ISP param 0x2a003, y to
+0x2a004, and the byte array pointer to 0x2a006. Observed P5 modes:
+1..3 use symmetric tint bytes ([v,0,0,v] with v = 0x36/0x53/0x13),
+4 uses signed x/y (stock x=246, y=8), 5 is all zeros (grayscale,
+so mode 5 is likely what MONOCHROME uses), 6 similar layout.
+
+Custom effects: repurpose a stock slot, do not add modes. The UI
+shows 10 fixed effect icons. `film-wkw` patches P5 mode 4's x/y,
+which only effect slot 4 uses. Which dial position maps to slot 4
+is unverified; find it on camera by cycling all effects.
+
+Pattern-overlay resources (P2 modes) live in A:/RO_RES/PATTERN/ as
+.yuv + .y weight pairs (sepia, rough, colors, fisheye, heavy, LIGHT
+variants) at 320x240 and 800x608, some LZ4-compressed.
