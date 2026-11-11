@@ -101,12 +101,24 @@ def cmd_build():
     repack.repack(carved, out_dat)
 
     print("\n== verify ==")
-    # structural verification: rebuilt file must parse identically
+    # rebuilt file must parse into the same layout, and every part except
+    # 'code' must be byte-identical to stock
     new = open(out_dat, "rb").read()
     old = open(FW_PATH, "rb").read()
-    assert [n for n, o, s in sunp.parts(new)] == \
-           [n for n, o, s in sunp.parts(old)]
-    print("  layout parses: OK")
+    pn = {n: (o, s) for n, o, s in sunp.parts(new)}
+    po = {n: (o, s) for n, o, s in sunp.parts(old)}
+    assert list(pn) == list(po)
+    for n in pn:
+        if n == "code":
+            continue
+        o1, s1 = pn[n]
+        o2, s2 = po[n]
+        assert s1 == s2 and new[o1:o1 + s1] == old[o2:o2 + s2], n
+    cn, cs = pn["code"]
+    diffs = sum(a != b for a, b in zip(new[cn:cn + cs],
+                                       old[cn:cn + cs]))
+    print(f"  layout parses: OK, non-code parts identical, "
+          f"code differs in {diffs} byte(s)")
 
     print(f"""
 DONE: {out_dat}
