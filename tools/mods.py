@@ -59,78 +59,82 @@ MODS = {
               "beqz $v0 -> b  (always skip film-mech boot block)"),
     ],
 
-    # "Wong Kar-wai" film effect, iteration 1.
+    # The WKW dial: one Wong Kar-wai film per film-effect position.
     #
-    # Film effects are parameter combos applied by IQ_FilmEffectModeSet
-    # (0x80360a04) via 8 param-class setters. The tint block P5 writes
-    # at 0x808b2e4c feeds ISP params 0x2a003 (x) and 0x2a004 (y) through
-    # the apply path at 0x80360f80.
+    # All ten positions stay reachable (stock dial wrap). Slots 1-6
+    # get repointed P5 args and retuned P5 constants; slots 7-9 keep
+    # their stock pattern combos and only get renamed, because the
+    # only film patterns in the firmware are sepia and rough
+    # (FILM_EFFECT_SEPIA / FILM_EFFECT_ROUGH strings; heavy, fisheye,
+    # colorshift and light leak are all LENS effects).
     #
-    # This mod does three things:
+    # Corrected P5 mode map (jump table 0x804d7dfc, indexed by arg;
+    # research.md's older table was off by one - mode 3 owns x/y):
     #
-    # 1. Tune the P5-mode-4 constants toward a warm WKW grade
-    #    (vaddr 0x8036080c/0x80360810): x 246->128, y 8->64. Semantics
-    #    are unverified (likely Cb/Cr tint or hue/sat gain); v1 is a
-    #    strong shift so the look is obviously different.
+    #   0  clear alt field      1  tint [0x53,0,0,0x53]
+    #   2  tint [0x13,0,0,0x13] 3  x=246, y=8 (the x/y case)
+    #   4  all zeros (flat)     5  x=y=0xf8, tint [0x56,0,0,0x56]
+    #   6  tint [0x36,0,0,0x36]
     #
-    # 2. Repoint effect slot 1 to the WKW combo (vaddr 0x80360ab8/
-    #    0x80360ac0/0x80360ac4): stock slot 1 was P4=1,P5=1,P7=1; now
-    #    P4=0 (neutral reset), P5=4 (our tint), P7=3. WKW sits at dial
-    #    position 1, right after NORMAL at position 0.
+    # Modes 1, 2 and 6 share one body at 0x803607b8; each only
+    # differs in the byte loaded into $a0.
     #
-    # 3. Limit the film-effect dial to two slots. The dial handlers
-    #    wrap index +0x19 at 9: decrement wraps 0->9 (vaddr 0x801e1914,
-    #    now 0->1) and increment continues while idx<9 (vaddr
-    #    0x801e1a9c, now idx<1). Result: NORMAL <-> WKW only.
+    # Dial layout:
+    #   0 NORMAL (stock)
+    #   1 In the Mood for Love  P4=0, P5=3 (x/y retuned 128/64), P7=3
+    #   2 Chungking Express     stock P3=1/P4=2, P5=1 (byte 0x70)
+    #   3 Fallen Angels         stock P3=3/P7=5, P5=2 (byte 0x08)
+    #   4 Happy Together        stock P7=3, P5=6 (byte 0x48)
+    #   5 2046                  stock P7=2, P5=5 (x/y 0x18, byte 0x70)
+    #   6 The Grandmaster       stock P4=3/P7=4, P5=4 (flat)
+    #   7 Ashes of Time         stock P2=2 + P8=2 (sepia?)
+    #   8 Days of Being Wild    stock P2=1 + P8=1 (rough?)
+    #   9 As Tears Go By        stock P1=1 + P2=3
     #
-    # Slots 2-9 still exist in the dispatcher but are unreachable via
-    # the dial. Lens effects (field +0x18) are untouched.
-    "film-wkw": [
+    # Retune values are blind first guesses: tint-byte and x/y
+    # semantics are unverified, and which P2 arg maps to sepia vs
+    # rough is unverified. Flash, shoot, report, retune.
+    "wkw-suite": [
+        # In the Mood for Love (slot 1): x/y grade
         Patch(0x36080c, "f6000424", "80000424",
-              "P5-m4 x: 246 -> 128 (ISP 0x2a003)"),
+              "P5-m3 x: 246 -> 128 (ISP 0x2a003)"),
         Patch(0x360810, "08000324", "40000324",
-              "P5-m4 y: 8 -> 64 (ISP 0x2a004)"),
+              "P5-m3 y: 8 -> 64 (ISP 0x2a004)"),
         Patch(0x360ab8, "01000424", "00000424",
               "slot1 P4 arg: 1 -> 0 (neutral)"),
-        Patch(0x360ac0, "01000424", "04000424",
-              "slot1 P5 arg: 1 -> 4 (WKW tint)"),
+        Patch(0x360ac0, "01000424", "03000424",
+              "slot1 P5 arg: 1 -> 3 (x/y grade)"),
         Patch(0x360ac4, "01000424", "03000424",
               "slot1 P7 arg: 1 -> 3"),
-        Patch(0x1e1914, "09000324", "01000324",
-              "dial decrement wrap: 0->9 becomes 0->1"),
-        Patch(0x1e1a9c, "0900432c", "0100432c",
-              "dial increment bound: idx<9 becomes idx<1"),
-    ],
-
-    # Monochrome film effect at dial position 2.
-    #
-    # Repoints effect slot 2's case (vaddr 0x80360adc) to a pure
-    # stock-parameter combo: P3=0 (mode 0 writes zero, neutral),
-    # P4=0 (neutral, same assumption film-wkw makes), P5=5 (the
-    # all-zeros grayscale config; no stock effect selects it). Stock
-    # slot 2 was P3=1, P4=2, P5=2. The P5 arg sits in the tail-call
-    # setup at 0x80360af8, not next to the other args.
-    #
-    # The two dial patches expect the bytes film-wkw leaves behind
-    # (wrap 0->1, idx<1) and widen them to 0->2 / idx<2, so the dial
-    # becomes NORMAL <-> WKW <-> MONO. They only apply cleanly after
-    # film-wkw; on a build without it they skip with a warning and
-    # MONO simply sits at stock dial position 2.
-    "film-mono": [
-        Patch(0x360ae0, "01000424", "00000424",
-              "slot2 P3 arg: 1 -> 0 (neutral)"),
-        Patch(0x360ae8, "02000424", "00000424",
-              "slot2 P4 arg: 2 -> 0 (neutral)"),
-        Patch(0x360af8, "02000424", "05000424",
-              "slot2 P5 arg: 2 -> 5 (grayscale)"),
-        Patch(0x1e1914, "01000324", "02000324",
-              "dial decrement wrap: 0->1 becomes 0->2"),
-        Patch(0x1e1a9c, "0100432c", "0200432c",
-              "dial increment bound: idx<1 becomes idx<2"),
+        # Chungking Express (slot 2): retuned m1 diagonal tint
+        Patch(0x3607e8, "53000424", "70000424",
+              "P5-m1 tint byte: 0x53 -> 0x70"),
+        Patch(0x360af8, "02000424", "01000424",
+              "slot2 P5 arg: 2 -> 1"),
+        # Fallen Angels (slot 3): retuned m2 diagonal tint
+        Patch(0x3607f8, "13000424", "08000424",
+              "P5-m2 tint byte: 0x13 -> 0x08"),
+        Patch(0x360b10, "06000424", "02000424",
+              "slot3 P5 arg: 6 -> 2"),
+        # Happy Together (slot 4): retuned m6 diagonal tint
+        Patch(0x3607b4, "36000424", "48000424",
+              "P5-m6 tint byte: 0x36 -> 0x48"),
+        Patch(0x360b20, "04000424", "06000424",
+              "slot4 P5 arg: 4 -> 6"),
+        # 2046 (slot 5): retuned m5 x/y + tint byte
+        Patch(0x360878, "f8000424", "18000424",
+              "P5-m5 x/y: 0xf8 -> 0x18"),
+        Patch(0x36087c, "56000524", "70000524",
+              "P5-m5 tint byte: 0x56 -> 0x70"),
+        Patch(0x360b30, "03000424", "05000424",
+              "slot5 P5 arg: 3 -> 5"),
+        # The Grandmaster (slot 6): flat all-zeros tint
+        Patch(0x360b48, "05000424", "04000424",
+              "slot6 P5 arg: 5 -> 4 (flat)"),
     ],
 }
 
-DEFAULT_MODS = ["printer-boot-skip", "film-wkw", "film-mono"]
+DEFAULT_MODS = ["printer-boot-skip", "wkw-suite"]
 
 
 def apply_mods(code, mod_names=None, strict=False):

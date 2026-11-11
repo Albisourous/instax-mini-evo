@@ -265,41 +265,49 @@ Effect modes (param values per setter):
 P5 is the color-grading knob. Its sub-cases write a tint block:
 flag at +0x10, x at +0x14, y at +0x18, four tint bytes at +0x1c..0x1f.
 The apply path at 0x80360f80 pushes x to ISP param 0x2a003, y to
-0x2a004, and the byte array pointer to 0x2a006. Observed P5 modes:
-1..3 use symmetric tint bytes ([v,0,0,v] with v = 0x36/0x53/0x13),
-4 uses signed x/y (stock x=246, y=8), 5 is all zeros (grayscale,
-so mode 5 is likely what MONOCHROME uses), 6 similar layout.
+0x2a004, and the byte array pointer to 0x2a006. Modes 1, 2 and 6
+share one body at 0x803607b8 and differ only in the byte loaded
+into $a0: tint [v,0,0,v] with v = 0x53 / 0x13 / 0x36. Mode 3 is
+the x/y case (stock x=246, y=8). Mode 4 writes all zeros (flat).
+Mode 5 combines x=y=0xf8 with tint [0x56,0,0,0x56]. Mode 0 clears
+an alternate-layout field. Tint-byte and x/y semantics are
+unverified.
 
 Custom effects: repurpose a stock slot, do not add modes. The UI
-shows 10 fixed effect icons. `film-wkw` patches P5 mode 4's x/y,
-which only effect slot 4 uses. Which dial position maps to slot 4
-is unverified; find it on camera by cycling all effects.
+shows 10 fixed effect icons. `wkw-suite` retunes per-mode P5
+constants and repoints each slot's P5 arg; the P5 arg selects the
+shared tint case, so each retuned mode is a global constant shared
+by every slot that references it.
 
 Pattern-overlay resources (P2 modes) live in A:/RO_RES/PATTERN/ as
 .yuv + .y weight pairs (sepia, rough, colors, fisheye, heavy, LIGHT
 variants) at 320x240 and 800x608, some LZ4-compressed.
 
-### film-wkw implementation
+### wkw-suite implementation
 
-WKW lives at slot 1 (right after NORMAL), not slot 4. Effect-1's case
-at 0x80360ab4 is repointed: P4 arg 1->0 (neutral), P5 arg 1->4 (our
-tint), P7 arg 1->3. The dial is limited to 2 slots via the index
-handlers: +0x19 is the film-effect index, +0x18 is the lens-effect
-index (left alone). Decrement handler wraps idx 0->9 at 0x801e1914,
-patched to 0->1. Increment handler continues while idx<9 at
-0x801e1a9c, patched to idx<1. Slots 2-9 remain in the dispatcher but
-are unreachable from the dial; a saved index above 1 could still
-activate one once until the dial is turned.
+One Wong Kar-wai film per dial position; the dial keeps its stock
+0-9 wrap so all ten positions stay reachable. Only arg immediates
+and per-mode constants are patched.
 
-### film-mono implementation
+| pos | film | change |
+|-----|------|--------|
+| 0 | NORMAL | stock |
+| 1 | In the Mood for Love | P4 arg->0, P5 arg->3, P7 arg->3; m3 x/y 246/8 -> 128/64 |
+| 2 | Chungking Express | P5 arg->1; m1 byte 0x53 -> 0x70 |
+| 3 | Fallen Angels | P5 arg->2; m2 byte 0x13 -> 0x08 |
+| 4 | Happy Together | P5 arg->6; m6 byte 0x36 -> 0x48 |
+| 5 | 2046 | P5 arg->5; m5 x/y 0xf8 -> 0x18, byte 0x56 -> 0x70 |
+| 6 | The Grandmaster | P5 arg->4 (flat) |
+| 7 | Ashes of Time | stock P2=2 + P8=2 (sepia pattern, unverified) |
+| 8 | Days of Being Wild | stock P2=1 + P8=1 (rough pattern, unverified) |
+| 9 | As Tears Go By | stock P1=1 + P2=3 |
 
-MONO lives at slot 2. Effect-2's case at 0x80360adc is repointed:
-P3 arg 1->0, P4 arg 2->0, P5 arg 2->5 (grayscale; its arg sits in
-the tail-call setup at 0x80360af8, not beside the other args). The
-same two dial sites film-wkw patches are widened from 1 to 2, so
-film-mono's dial patches expect the post-wkw bytes and only apply
-when film-wkw ran first. Without film-wkw they skip, and MONO stays
-reachable at stock dial position 2.
+Only two film patterns exist (FILM_EFFECT_SEPIA, FILM_EFFECT_ROUGH
+strings; heavy/fisheye/colorshift/light leak are lens effects), so
+positions 7-9 keep stock combos. Positions 8 and 9 may end up
+sharing the rough pattern, distinguished only by the unknown P8/P1
+args. P2 arg -> pattern-file mapping is unverified; fix by cycling
+args after a flash.
 
 ### Film-effect internals, addresses worth keeping
 
@@ -318,17 +326,21 @@ Dispatcher `IQ_FilmEffectModeSet` at 0x80360a04:
 P5 (0x80360770) sub-dispatch: bound `a0 < 7`, jump table
 0x804d7dfc. Tint block at 0x808b2e4c: u32 mode @+0, u32 @+4/+8
 (alt layout), bytes @+0xc..0xf (alt layout), u32 flag @+0x10,
-u32 x @+0x14, u32 y @+0x18, 4 tint bytes @+0x1c..0x1f. Observed
-per-mode values:
+u32 x @+0x14, u32 y @+0x18, 4 tint bytes @+0x1c..0x1f. Per-mode
+values (corrected; an earlier table was off by one):
 
-| P5 mode | written values                              |
-|---------|---------------------------------------------|
-| 1       | flag=1, x=0, y=0, tint=[0x36,0,0,0x36]      |
-| 2       | flag=1, x=0, y=0, tint=[0x53,0,0,0x53]      |
-| 3       | flag=1, x=0, y=0, tint=[0x13,0,0,0x13]      |
-| 4       | flag=1, x=246, y=8, tint=[0,0,0,0]          |
-| 5       | flag=1, x=0, y=0, tint=[0,0,0,0] (grayscale)|
-| 6       | flag=1, partial: byte@+0x1f=0x56 seen       |
+| P5 arg | case | written values                             |
+|--------|------|--------------------------------------------|
+| 0      | 0x803607a0 | clears alt field @0x2e5c               |
+| 1      | 0x803607dc | flag=1, x=0, y=0, tint=[0x53,0,0,0x53]     |
+| 2      | 0x803607ec | flag=1, x=0, y=0, tint=[0x13,0,0,0x13]     |
+| 3      | 0x803607fc | flag=1, x=246, y=8, tint=[0,0,0,0]         |
+| 4      | 0x80360830 | flag=1, x=0, y=0, tint=[0,0,0,0] (loop)    |
+| 5      | 0x80360870 | flag=1, x=y=0xf8, tint=[0x56,0,0,0x56]     |
+| 6      | 0x803607ac | flag=1, x=0, y=0, tint=[0x36,0,0,0x36]     |
+
+Modes 1/2/6 jump into a shared body at 0x803607b8 with the byte
+preloaded into $a0; only the `li $a0,v` immediate differs.
 
 P7 (0x803608e8) sub-dispatch: bound `a0 < 6`, jump table
 0x804d7e18. Writes {u32 mode @0x2e9c, byte param @+4}: observed
@@ -362,7 +374,7 @@ Field +0x18 = lens-effect index, +0x19 = film-effect index,
 0x801e1914); dial increment handler at 0x801e1a8c (continues
 while idx<9 via `sltiu $v1,$v0,9` at 0x801e1a9c). Parallel
 handlers for the lens index (+0x18) sit at 0x801e19b8 and
-0x801e1b7c with the same wrap pattern; film-wkw leaves them
+0x801e1b7c with the same wrap pattern; wkw-suite leaves them
 alone so lens effects keep all 10 positions.
 
 ### Updater / integrity (v1.09, decoded 2026-11-10)
