@@ -131,3 +131,90 @@ Linouth's iCatch-V50-Playground (SPCA6500/Akaso V50):
   read its state besides GPIO 0xb0001038?
 - HDR1 field[6] = A:/B: image sizes. Is field[3]=0xffffffff a "burn
   everything" marker?
+
+## Bluetooth / FujiFile protocol map (FI019, v1.09)
+
+The camera is a BLE GATT server + classic SPP device named `INSTAX-%s`
+(CN variant `INSTAX-CN-%s`). The phone app speaks a custom "FujiFile"
+command protocol over GATT writes/notifies.
+
+### Message flow (all addresses = vaddr, code base 0x80000000)
+
+- GATT write -> recv path -> wrapper @0x802f9cfc/0x802f9d44:
+  `a0 = lw(frame)` (first u32 of the received buffer = wire opcode),
+  then `jal 0x802f8474`.
+- 0x802f8474: wire-opcode -> internal-msgid translator. Wire opcodes
+  are `0x0100xxxx` (little-endian u32, first 4 bytes of the write).
+- Dispatcher @0x802f6ee8: `a0` = internal msgid. Top nibble class:
+  `0x1xxx` = app commands, `0xexxx` = internal BT events.
+  `0x19xx` -> jump table @0x804b38c4 (0x2a entries, GET_*),
+  `0x1bxx` -> jump table @0x804b3838 (0x23 entries, CMD_*).
+- Handlers live in `BTInterface_*` (~0x802cxxxx-0x802dxxxx).
+  Call shape per case: `a0 = lw(ctx+8)`, `a1 = lw(msg+0xc)` (payload ptr).
+
+### Internal msg IDs (from the two jump tables)
+
+GET group (0x19xx):
+  0x1917 GET_DEVICE_SUPP_INFORMATION   0x1918 GET_DEVICE_INFORMATION
+  0x1919 GET_PRINT_IMG_INFO            0x191a GET_BARRTERY_INFO (sic)
+  0x191b GET_PRINTER_CAP_INFO          0x191c GET_PRINTER_OP_INFO
+  0x191d GET_CAMERA_CAP_INFO           0x191e GET_CAMERA_OP_INFO
+  0x191f GET_IDENTIFY_INFO             0x1920 GET_UPLOAD_INFO
+  0x1921 GET_PRINT_COMPLETE_TIME       0x1922 GET_SUBTOTAL_NUM
+  0x1923 GET_DATE_NUM                  0x1924 GET_SUBTOTAL_DATA
+  0x1925 GET_DATE_DATA                 0x1926 GET_FILTER_NUM
+  0x1927 GET_FILTER_DATA               0x1928 GET_CAMERA_FAVORITE_SETTING_HISTORY
+  0x1929 GET_CAMERA_CURRENT_FAVORITE_SETTING
+
+CMD group (0x1bxx):
+  0x1b00 PRINT_DOWNLOAD_START   0x1b02 PRINT_DOWNLOAD_END
+  0x1b03 PRINT_DOWNLOAD_CANCEL  0x1b04 PRINT_REJECT_FILMCOVER
+  0x1b05 UPLOAD_PIC_START       0x1b06 UPLOAD_PIC_DATA
+  0x1b07 UPLOAD_PIC_END         0x1b08-0x1b0a UPLOAD_AUDIO_*
+  0x1b0b UPLOAD_URL_ADDR        0x1b0c UPLOAD_DATA_COMPLETE
+  0x1b0d LIVEVIEW_START         0x1b0f LIVEVIEW_STOP
+  0x1b10 LIVEVIEW_TAKE_PIC      0x1b11-0x1b14 LIVEVIEW_POST_UPLOAD_*
+  0x1b15/0x1b17 FRAME_PIC_DOWNLOAD_START/END
+  0x1b18-0x1b1a CLEAR_SUBTOTAL/DATE/FILTER
+  0x1b1b-0x1b21 FW_DOWNLOAD_* / FW_BACKUP / FW_PROGRAM_*
+  0x1b22 COMMON_SHUTDOWN
+
+Known wire opcodes (0x0100xxxx -> msgid, from translator; partial):
+  0x01006012 -> 0x1b05 UPLOAD_PIC_START   0x01006013 -> 0x1b06 UPLOAD_PIC_DATA
+  0x0100600c -> 0x1b02 PRINT_DOWNLOAD_END 0x0100600d -> 0x1b03 PRINT_DL_CANCEL
+  0x0100600f -> 0x1b04                    0x01006019 -> 0x1b0c
+  0x0100601a -> 0x1b0d LIVEVIEW_START     0x0100601c -> 0x1b0f LIVEVIEW_STOP
+  0x01006020 -> 0x1b13                    0x01006029 -> 0x1b12
+  0x0100602a -> 0x1b19                    0x0100602d -> 0x1b1a
+  0x01006034 -> 0x1b20                    0x01006035 -> 0x1b21
+  0x01006001 -> 0x1918                    0x01006005 -> 0x191c
+  0x01006014 -> 0x1919?? (verify)         0x0100602f -> 0x191e
+  0x01006036 -> 0x191b                    0x0100602e -> 0x1928
+  0x01000100 -> 0x17c1                    0x01000300 -> 0x17c3 BREDR_LOST
+  0x0100a001 -> 0x1843 BLE_DEVICE_LOST    0x01007000 -> 0xec00
+  (full dump in tools/dev/fujifile_opcodes.txt if regenerated)
+
+### UPLOAD_PIC_START handler (0x802ceb94)
+
+- Request payload: u32 picture index (bounds check `< 0x63`).
+- Resolves index -> file info (0x802d4a24), snprintf filename via
+  0x8006bb78, reads pic-type/size fields, builds ~0x1cc-byte response
+  block (sp+0x1e8). So the app can pull arbitrary stored photos by
+  index -- NOT limited to print renders. Index enumeration likely via
+  GET_DATE_*/GET_SUBTOTAL_* (photo lists grouped by date) and/or
+  GET_UPLOAD_INFO.
+
+### Pairing
+
+Uses numeric comparison (MSG_UI_WIFI_BT_DEVICE_NUMERIC_INFO,
+HCI_CMD_PASSKEY_ENTRY_RSP, PairingReply handler): app shows code,
+user confirms on camera with OK (per official FAQ). Standard
+OS-level BLE pairing should suffice for a custom client.
+
+### Still unknown (need a live probe)
+
+- GATT service/characteristic UUIDs (client can just enumerate).
+- Exact response frame layout (header fields, notify chunking, MTU).
+- Whether the GATT write is raw [u32 opcode][payload] or has a
+  header (len/seq/flags) before the opcode.
+- Endianness/packing of larger payloads and image chunk format.
