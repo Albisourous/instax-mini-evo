@@ -282,6 +282,16 @@ patched to 0->1. Increment handler continues while idx<9 at
 are unreachable from the dial; a saved index above 1 could still
 activate one once until the dial is turned.
 
+### film-mono implementation
+
+MONO lives at slot 2. Effect-2's case at 0x80360adc is repointed:
+P3 arg 1->0, P4 arg 2->0, P5 arg 2->5 (grayscale; its arg sits in
+the tail-call setup at 0x80360af8, not beside the other args). The
+same two dial sites film-wkw patches are widened from 1 to 2, so
+film-mono's dial patches expect the post-wkw bytes and only apply
+when film-wkw ran first. Without film-wkw they skip, and MONO stays
+reachable at stock dial position 2.
+
 ### Film-effect internals, addresses worth keeping
 
 Dispatcher `IQ_FilmEffectModeSet` at 0x80360a04:

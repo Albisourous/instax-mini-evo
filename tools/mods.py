@@ -101,9 +101,36 @@ MODS = {
         Patch(0x1e1a9c, "0900432c", "0100432c",
               "dial increment bound: idx<9 becomes idx<1"),
     ],
+
+    # Monochrome film effect at dial position 2.
+    #
+    # Repoints effect slot 2's case (vaddr 0x80360adc) to a pure
+    # stock-parameter combo: P3=0 (mode 0 writes zero, neutral),
+    # P4=0 (neutral, same assumption film-wkw makes), P5=5 (the
+    # all-zeros grayscale config; no stock effect selects it). Stock
+    # slot 2 was P3=1, P4=2, P5=2. The P5 arg sits in the tail-call
+    # setup at 0x80360af8, not next to the other args.
+    #
+    # The two dial patches expect the bytes film-wkw leaves behind
+    # (wrap 0->1, idx<1) and widen them to 0->2 / idx<2, so the dial
+    # becomes NORMAL <-> WKW <-> MONO. They only apply cleanly after
+    # film-wkw; on a build without it they skip with a warning and
+    # MONO simply sits at stock dial position 2.
+    "film-mono": [
+        Patch(0x360ae0, "01000424", "00000424",
+              "slot2 P3 arg: 1 -> 0 (neutral)"),
+        Patch(0x360ae8, "02000424", "00000424",
+              "slot2 P4 arg: 2 -> 0 (neutral)"),
+        Patch(0x360af8, "02000424", "05000424",
+              "slot2 P5 arg: 2 -> 5 (grayscale)"),
+        Patch(0x1e1914, "01000324", "02000324",
+              "dial decrement wrap: 0->1 becomes 0->2"),
+        Patch(0x1e1a9c, "0100432c", "0200432c",
+              "dial increment bound: idx<1 becomes idx<2"),
+    ],
 }
 
-DEFAULT_MODS = ["printer-boot-skip", "film-wkw"]
+DEFAULT_MODS = ["printer-boot-skip", "film-wkw", "film-mono"]
 
 
 def apply_mods(code, mod_names=None, strict=False):

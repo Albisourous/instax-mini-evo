@@ -42,11 +42,17 @@ printer in the boot path, this mod skips that block with a
 single-instruction patch in the PreBoot-1 stage. Runtime printing is
 untouched.
 
-`film-wkw`: an experimental Wong Kar-wai-inspired film look. It reduces
-the film-effect dial to two positions: NORMAL and the WKW grade. Stock
-effects 2-9 become unreachable from the dial but remain in the
-firmware. Iteration 1: the exact tint parameter semantics are still
-being tuned, so treat it as a test patch. Lens effects are untouched.
+`film-wkw`: an experimental Wong Kar-wai-inspired film look. It puts
+the WKW grade at dial position 1 and locks stock effects 2-9 away from
+the dial (they remain in the firmware). Iteration 1: the exact tint
+parameter semantics are still being tuned, so treat it as a test
+patch. Lens effects are untouched.
+
+`film-mono`: a monochrome look at dial position 2. Together with
+film-wkw the dial cycles NORMAL, WKW, MONO and wraps. It reuses stock
+parameters only: neutral contrast and gain plus the all-zeros
+grayscale config no stock effect selects. Without film-wkw it sits at
+stock dial position 2.
 
 Details in `tools/mods.py` and `docs/research.md`.
 
@@ -77,8 +83,8 @@ python3 tools/fat.py    put out/carved/B.img USER_RES/PRINTER.BIN new.bin
 ## Verified
 
 On stock v1.09, carve then repack produces a byte-identical file. Both
-FAT16 images mount on macOS and Linux. The default mod changes exactly
-one byte and disassembles sanely. Nothing has been flashed to a device.
+FAT16 images mount on macOS and Linux. The default mods change exactly
+11 bytes and disassemble sanely. Nothing has been flashed to a device.
 
 ## Layout
 
