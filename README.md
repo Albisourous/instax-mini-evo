@@ -5,10 +5,12 @@ standalone digital camera running modified software. It unpacks the
 stock firmware, applies camera mods, and repacks a flashable image in
 one command, with no dependencies beyond Python 3.
 
-> **BRICK RISK.** Flashing modified firmware can permanently brick the
-> camera. There is no confirmed recovery path on this model. The build
-> output is not tested on hardware. You proceed entirely at your own
-> risk. See `docs/research.md`.
+> **BLOCKED, for now.** The camera verifies an RSA/ECDSA signature
+> covering the whole update image before writing, so a modified
+> FPUPDATE.DAT gets rejected. Getting mods onto the camera first
+> needs a bootstrap path (UART shell or USB ISP mode). Flashing
+> modified firmware can still permanently brick the camera once you
+> get there. See `docs/research.md`.
 
 ## Requirements
 
@@ -23,15 +25,16 @@ one command, with no dependencies beyond Python 3.
 ```
 
 That downloads the stock v1.09 firmware if missing (~93MB), carves it
-into parts, applies the default mods, and writes
-`out/FPUPDATE_MOD.DAT`.
+into parts, applies the default mods, recomputes the integrity
+fields, and writes `out/FPUPDATE_MOD.DAT`.
 
 ## Installing the result
 
 1. Copy `out/FPUPDATE_MOD.DAT` to the root of a FAT32 microSD card.
 2. Rename it to `FPUPDATE.DAT`.
 3. Insert the card, power the camera on, open MENU, FIRMWARE UPGRADE.
-4. Accept the brick risk and confirm.
+4. Stock firmware rejects the image at the signature check. The mods
+   only get there after a bootstrap path (UART/ISP) exists.
 
 ## What the default mods do
 

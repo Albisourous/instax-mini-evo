@@ -137,10 +137,9 @@ To install:
   1. copy FPUPDATE_MOD.DAT to the root of a FAT32 microSD card
   2. rename it to FPUPDATE.DAT
   3. insert card, power on, use the FIRMWARE UPGRADE menu
-
-!! BRICK RISK: modified firmware is untested on hardware. Checksum
-!! fields are recomputed; the 256-byte signature block is preserved
-!! verbatim and its enforcement is unknown. Proceed at your own risk.
+  4. stock firmware REJECTS it: the signature covers the whole
+     image (see docs/research.md). Mods need a bootstrap path
+     (UART/ISP) before this file can flash.
 """)
 
 

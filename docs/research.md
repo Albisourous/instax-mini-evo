@@ -420,23 +420,54 @@ calls `ab_fw_signature_verify` at 0x802269b8:
   "firmware broken" rejection.
 
 Verify core at 0x80308d88 is a real mbedtls RSA/ECDSA check:
-`iab_generate_signature_check_data` (~0x80309100) reads the file
-in 1024-byte chunks through vfs calls (0x8012xxxx) and feeds the
-mbedtls SHA/pk stack (0x8033xxxx). Strings: `iab_signature_verify`,
-`ECDSA verify failed. mbedtls_pk_verify returned -0x%04x`, `RSA
-verify failed ...`, `OTA version :%s is lower then Signature
-verify tool version.`, `Signature_verify_test`. The 256-byte
-block in the tail is the genuine signature.
 
-Fallback mod: `sigverify-bypass` in tools/mods.py (not in
-DEFAULT_MODS) patches 0x80226a98 so the wrapper always returns 1.
-The file must still pass the earlier gates (SUNP magic, both
-word-sums) to reach this code.
+- Seeks to EOF-1028 (the byte after the 256-byte signature) and
+  reads the 1024-byte post-signature block.
+- memcmp's its first 32 bytes against the 0x20..0x01 countdown
+  pattern (error 7, "Magic number is wrong." if mismatched).
+- sscanf("%u.%u.%u") parses "0.001.000" at +0x20; the second
+  component must be nonzero or it bails with "OTA version is
+  lower then Signature verify tool version." (return code 2).
+- The u32 at +0x58 indexes a jump table of hash/crypto types
+  (stock value 1).
+- Reads {offset,size} from +0x30/+0x34 and streams that region
+  through the mbedtls SHA path (0x80334500) in <=1MB chunks.
+  Stock values: {0, 0x05cd1850} = fw[0:file_size).
+- Then hashes the same 1024-byte post-signature block again
+  (fw[file_size+0x100 : EOF-4)), finalizes the digest and runs
+  mbedtls_pk_verify (ECDSA or RSA per type) against the 256-byte
+  signature.
 
-Open question: exact signed coverage. The hash path reads
-sequentially in 1KB chunks; constants 0x200 (header size) and
-0x100 (signature size) appear in the region, and the HDR2
-"build<sign>a?/b?" records carry {offset,size} pairs for the
-A:/B: images. Whether the signature covers the code part, or only
-the A:/B: regions, is unresolved - it decides whether a
-correctly-checksummed code mod flashes without the bypass.
+Coverage conclusion (verified against stock values): the
+signature covers fw[0:file_size) plus the post-signature block
+minus its last word - i.e. EVERYTHING except the signature
+itself and the final checksum word. Head, HDR1/2/3, A:, B: and
+code are all inside the signed region. The two word-sums are
+necessary but never sufficient; any content change fails
+signature verification.
+
+Hard consequence: the check runs in the INSTALLED firmware
+before anything is written. Patching ab_fw_signature_verify
+inside the new image is inert for the first flash - the running
+stock verifier still fails the image. `sigverify-bypass` only
+becomes useful after code execution is achieved another way
+(it would then make subsequent updates friction-free). The SD
+menu path alone cannot bootstrap a modified image.
+
+Viable bootstrap directions (all need hardware access):
+
+1. sysboot serial shell: strings show an `isp <firmware bin>`
+   command plus `nanderase`, `read`, `fill` - a factory burn
+   path that likely skips the signature gate. Needs UART pads.
+2. USB ISP mode (iCatch FRM protocol): on the V50 family this
+   flashes/dumps without file verification; the "charge-only"
+   USB spec may still expose it via the button combo.
+3. RAM-patch the running verifier over UART (sysboot `fill`),
+   then flash a modded image via the normal menu path.
+
+`iab_generate_signature_check_data` (~0x80309100) strings:
+`iab_signature_verify`, `iab_get_public_key`,
+`ECDSA verify failed. mbedtls_pk_verify returned -0x%04x`,
+`RSA verify failed ...`, `hash ctx init fail.`,
+`Unsupported hash type`, `Unsupported crypto type.`,
+`Public key read fail.`

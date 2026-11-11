@@ -134,8 +134,11 @@ MODS = {
     ],
 
     # Optional: bypass the firmware-signature gate. NOT a default
-    # mod - enable only if a correctly-checksummed image is still
-    # rejected by the camera.
+    # mod, and NOT a bootstrap path: the check runs in the
+    # INSTALLED firmware before writing, so this patch inside the
+    # new image can never fire on the first flash. It only helps
+    # once modded code is already running (e.g. after a UART/ISP
+    # bootstrap), making later updates friction-free.
     #
     # The FIRMWARE UPGRADE path calls ab_fw_signature_verify at
     # 0x802269b8: it snprintf's the file path, calls the mbedtls
