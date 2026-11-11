@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""instax-evo - one-command firmware pipeline for the Fujifilm instax
+mini Evo digicam project.
+
+    ./instax-evo build    unpack -> mod -> repack a ready-to-use
+                          FPUPDATE.DAT in out/
+    ./instax-evo unpack   only carve the stock firmware into parts
+    ./instax-evo inspect  show the SUNP BURN FILE layout
+    ./instax-evo catalog  extract A:/B: partition files to out/
+
+Output of `build`: out/FPUPDATE_MOD.DAT - copy it to the root of a
+FAT32 microSD card, insert, then use the camera's FIRMWARE UPGRADE menu.
+
+WARNING: flashing a modified firmware image can permanently brick the
+camera. There is no confirmed recovery path for this model. The build
+output is provided for research; you flash at your own risk.
+"""
+
+import os
+import sys
+import urllib.request
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+
+import sunp
+import mods
+
+FW_PATH = os.path.join(ROOT, "firmware", "FPUPDATE.DAT")
+FW_URL = ("https://www.instax.com/mini_evo/en/support/firmware/"
+          "firmware.html")
+OUT = os.path.join(ROOT, "out")
+
+
+def ensure_firmware():
+    if os.path.exists(FW_PATH):
+        return
+    os.makedirs(os.path.dirname(FW_PATH), exist_ok=True)
+    print(f"downloading stock firmware (~93MB)...")
+    print(f"  {FW_URL}")
+    urllib.request.urlretrieve(FW_URL, FW_PATH)
+    print(f"  saved {FW_PATH}")
+
+
+def cmd_inspect():
+    ensure_firmware()
+    import inspect as _i
+    _i.main(FW_PATH)
+
+
+def cmd_unpack():
+    ensure_firmware()
+    import carve
+    carve.carve(FW_PATH, os.path.join(OUT, "carved"))
+
+
+def cmd_catalog():
+    ensure_firmware()
+    import fatfs
+
+    data = open(FW_PATH, "rb").read()
+    for name, off, size in sunp.parts(data):
+        if not name.endswith(".img"):
+            continue
+        label = name[0]
+        fs = fatfs.FatImage(data[off:off + size])
+        outdir = os.path.join(OUT, f"{label}_files")
+        n = 0
+        for path, e in fs.listdir():
+            if e.is_dir:
+                continue
+            dest = os.path.join(outdir, path)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            open(dest, "wb").write(fs.read(path))
+            n += 1
+        print(f"{label}: extracted {n} files to {outdir}/")
+
+
+def cmd_build():
+    ensure_firmware()
+    import carve, repack
+
+    carved = os.path.join(OUT, "carved")
+    print("== unpack ==")
+    carve.carve(FW_PATH, carved)
+
+    print("\n== apply mods ==")
+    code_path = os.path.join(carved, "code")
+    code = open(code_path, "rb").read()
+    patched, results = mods.apply_mods(code)
+    warned = False
+    for name, p, ok, msg in results:
+        print(f"  [{name}] {'OK' if ok else 'FAIL'} {msg}")
+        warned |= not ok
+    if warned:
+        print("  !! some mods did not apply - firmware version mismatch?")
+    open(code_path, "wb").write(patched)
+
+    print("\n== repack ==")
+    out_dat = os.path.join(OUT, "FPUPDATE_MOD.DAT")
+    repack.repack(carved, out_dat)
+
+    print("\n== verify ==")
+    # structural verification: rebuilt file must parse identically
+    new = open(out_dat, "rb").read()
+    old = open(FW_PATH, "rb").read()
+    assert [n for n, o, s in sunp.parts(new)] == \
+           [n for n, o, s in sunp.parts(old)]
+    print("  layout parses: OK")
+
+    print(f"""
+DONE: {out_dat}
+
+To install:
+  1. copy FPUPDATE_MOD.DAT to the root of a FAT32 microSD card
+  2. rename it to FPUPDATE.DAT
+  3. insert card, power on, use the FIRMWARE UPGRADE menu
+
+!! BRICK RISK: modified firmware is untested on hardware. The stock
+!! signature trailer is preserved but stale. Proceed at your own risk.
+""")
+
+
+USAGE = __doc__
+CMDS = {"build": cmd_build, "unpack": cmd_unpack,
+        "inspect": cmd_inspect, "catalog": cmd_catalog}
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2 or sys.argv[1] not in CMDS:
+        print(USAGE)
+        sys.exit(2)
+    CMDS[sys.argv[1]]()

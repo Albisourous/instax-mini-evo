@@ -22,7 +22,7 @@ def carve(dat_path, outdir):
 
     manifest = {"source_size": len(data), "parts": []}
     for name, off, size in sunp.parts(data):
-        fname = name.replace(".img", ".fat")
+        fname = name
         with open(os.path.join(outdir, fname), "wb") as f:
             f.write(data[off:off + size])
         manifest["parts"].append({"name": fname, "offset": off, "size": size})
@@ -34,7 +34,7 @@ def carve(dat_path, outdir):
     for name in ("A", "B"):
         off = dict((n, o) for n, o, s in sunp.parts(data))[name + ".img"]
         info = sunp.bpb_info(data, off)
-        print(f"{name}.fat: {info['fat_type']} oem={info['oem']} "
+        print(f"{name}.img: {info['fat_type']} oem={info['oem']} "
               f"{info['total_sectors']} sectors x {info['bytes_per_sector']}B")
     print("wrote manifest.json")
 

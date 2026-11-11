@@ -8,8 +8,11 @@ Usage:
     python3 tools/inspect.py firmware/FPUPDATE.DAT
 """
 
+import os
 import struct
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 MAG_FILE = b"SUNP BURN FILE"
 MAG_HDR = b"SUNP BURN HDR"
@@ -83,6 +86,20 @@ def main(path):
             entry = bytes(b ^ 0x7A for b in data[base + i * 128 : base + (i + 1) * 128])
             printable = entry.split(b"\x00")[0]
             print(f"  [{i}] {printable!r}")
+
+    # physical layout (verified on v1.09): partitions + FAT images
+    try:
+        import sunp
+        print("\nphysical layout:")
+        for name, off, size in sunp.parts(data):
+            extra = ""
+            if name.endswith(".img"):
+                info = sunp.bpb_info(data, off)
+                extra = (f"  {info['fat_type']} oem={info['oem']} "
+                       f"{info['total_sectors']}x{info['bytes_per_sector']}B")
+            print(f"  {name:8} 0x{off:08x} + 0x{size:08x}{extra}")
+    except Exception as e:
+        print(f"\nlayout parse failed: {e}")
 
     # burnhdr3 filename list
     if off_hdr3 and data[off_hdr3 : off_hdr3 + len(MAG_HDR)] == MAG_HDR:
