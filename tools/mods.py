@@ -132,6 +132,29 @@ MODS = {
         Patch(0x360b48, "05000424", "04000424",
               "slot6 P5 arg: 5 -> 4 (flat)"),
     ],
+
+    # Optional: bypass the firmware-signature gate. NOT a default
+    # mod - enable only if a correctly-checksummed image is still
+    # rejected by the camera.
+    #
+    # The FIRMWARE UPGRADE path calls ab_fw_signature_verify at
+    # 0x802269b8: it snprintf's the file path, calls the mbedtls
+    # verify core at 0x80308d88, and returns s4 (1 on success, 0
+    # on failure). Every internal path converges on the same
+    # verify call, so the single instruction that zeroes s4 on
+    # failure (0x80226a98, addu s4,zero,zero) is the choke point.
+    # Replacing it with li s4,1 makes every signature check
+    # "succeed" - the RSA/ECDSA result is ignored entirely.
+    #
+    # Callers both gate on v0==0: 0x80230ee0 rejects with error
+    # pair {7,2}, 0x80234a9c with {7,4} (the "firmware broken"
+    # style error). This patch satisfies both, and any other
+    # current or future caller of the wrapper.
+    "sigverify-bypass": [
+        Patch(0x226a98, "21a00000", "01001424",
+              "s4 fail-path: 0 -> 1 (ab_fw_signature_verify "
+              "always returns success)"),
+    ],
 }
 
 DEFAULT_MODS = ["printer-boot-skip", "wkw-suite"]

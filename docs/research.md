@@ -398,3 +398,45 @@ alone so lens effects keep all 10 positions.
   B:\PRT_HIS\PIMG*.JPG) restored during update.
 - The camera's "broken firmware" rejection happened before any
   write: the check is a gate, not a verify-after-write.
+
+### Signature verify path (mapped 2026-11-10, code part)
+
+The gate lives in the main firmware, not sysboot. The update menu
+calls `ab_fw_signature_verify` at 0x802269b8:
+
+- snprintf's the file path into a stack buffer (paths via
+  0x8006bb78, prints via 0x8006bd38).
+- prints `ab_fw_signature_verify S [%d]` at 0x80226a5c.
+- calls the verify core `jal 0x80308d88` at 0x80226a6c with
+  a0 = path buffer, a1 = 4.
+- prints `ab_fw_signature_verify E [%d] [%d]` at 0x80226a80.
+- `beq s0,zero` at 0x80226a90 selects the return: s4 stays 1 on
+  success; on failure `addu s4,zero,zero` at 0x80226a98 clears it.
+  Every internal path (long-name truncation branches at
+  0x80226ac0/0x80226b14/0x80226b44/0x80226b6c) reconverges on the
+  same verify call, so 0x80226a98 is a single choke point.
+- Callers: 0x80230ee0 and 0x80234a9c (jal 0x802269b8), both test
+  v0==0 and reject with error pairs {7,2} / {7,4} - the observed
+  "firmware broken" rejection.
+
+Verify core at 0x80308d88 is a real mbedtls RSA/ECDSA check:
+`iab_generate_signature_check_data` (~0x80309100) reads the file
+in 1024-byte chunks through vfs calls (0x8012xxxx) and feeds the
+mbedtls SHA/pk stack (0x8033xxxx). Strings: `iab_signature_verify`,
+`ECDSA verify failed. mbedtls_pk_verify returned -0x%04x`, `RSA
+verify failed ...`, `OTA version :%s is lower then Signature
+verify tool version.`, `Signature_verify_test`. The 256-byte
+block in the tail is the genuine signature.
+
+Fallback mod: `sigverify-bypass` in tools/mods.py (not in
+DEFAULT_MODS) patches 0x80226a98 so the wrapper always returns 1.
+The file must still pass the earlier gates (SUNP magic, both
+word-sums) to reach this code.
+
+Open question: exact signed coverage. The hash path reads
+sequentially in 1KB chunks; constants 0x200 (header size) and
+0x100 (signature size) appear in the region, and the HDR2
+"build<sign>a?/b?" records carry {offset,size} pairs for the
+A:/B: images. Whether the signature covers the code part, or only
+the A:/B: regions, is unresolved - it decides whether a
+correctly-checksummed code mod flashes without the bypass.
