@@ -107,18 +107,24 @@ Linouth's iCatch-V50-Playground (SPCA6500/Akaso V50):
 - `tiredboffin.github.io` + `github.com/fujihack/fujihack` — Fujifilm X-series RE
   (different firmware family; useful methodology, wrong format).
 
-## Entry points for code execution (untested on this device)
+## Entry points for code execution
 
-1. **iCatch ISP/debug mode**: on V50-family cams, hold shutter → plug USB → tap
-   power → enumerates as "Icatch(X) KX Series Bulk Camera Device" → FRM tool
-   flashes/dumps. Needs testing on mini Evo despite "charge-only" USB.
-2. **UART**: sysboot has a serial command shell (memory dump/fill, file load to
-   DRAM at e.g. 0xa1000000). Needs teardown to find pads.
-3. **Modified FPUPDATE.DAT**: if checksum/signature unenforced (as on V50),
-   repacked image flashes via SD card menu. Highest brick risk, no confirmed
-   recovery path on this model.
-4. **Softmod path**: spca-fun ran code via the camera's own `mapExe`/loader
-   commands — needs equivalent on-device mechanism identified.
+1. **iCatch FRM over USB** (primary): hold shutter → plug USB → tap
+   power → V50 cams enumerate as "Icatch(X) KX Series Bulk Camera
+   Device" → FRM tool flashes/dumps unsigned. The ISP dispatcher
+   (`ispDoFunction`, ~21 NAND/FW opcodes) is statically confirmed
+   present in this firmware. Untested: whether the mini Evo combo
+   exists and whether its USB stack answers vendor requests.
+2. **UART sysboot shell**: debug commands only (mem dump/fill,
+   file read/write, raw NAND/SPI). `isp`/`boot` are dead code -
+   not registered. `fill` enables RAM patching but nothing in the
+   shell jumps to loaded code. Needs teardown to find pads.
+3. **Modified FPUPDATE.DAT via menu**: DEAD. Signature covers the
+   whole image, verified by installed firmware before writing.
+   A bypass inside the image cannot help the first flash.
+4. **Softmod loader path**: spca-fun ran code via the camera's own
+   loader commands - no equivalent found here (`boot` is
+   unregistered); FRM or UART must come first.
 
 ## Open questions
 
@@ -454,46 +460,44 @@ becomes useful after code execution is achieved another way
 (it would then make subsequent updates friction-free). The SD
 menu path alone cannot bootstrap a modified image.
 
-### Card ISP / sysboot shell path (mapped 2026-11-10, head part)
+### ISP paths in sysboot (mapped 2026-11-10, head part)
 
-The sysboot serial shell carries a full factory command set.
-Confirmed command/help strings:
+The shell command table is `{name_ptr, handler, help_ptr, 0}`,
+16-byte entries starting near file 0x9e51c. Registered commands
+are a debug set only: memory `dump`/`fill`/`search`, `regdump`,
+`os`/`task`/`mem` info, file `read`/`write`/`cp`/`ren`/`fmt`/`info`,
+raw NAND (`nanddetect`, `nanderase*`, `nandpr`/`nandpw`/`nandlr`/
+`nandrr`, rsv read/write/erase) and the SPI mirror set.
+`isp` and `boot` strings exist but NO table entry or code ref
+points at them - dead code in this build, not typed commands.
 
-- `isp <firmware.bin>` or `isp <*.BRN>` - "To do isp from card",
-  burns a file to flash. Prints `ISP File %s`, `FwWrite start`,
-  `FW%d write %u/%u KB`, `***** Card ISP complete!*****`.
-- `boot <filename>` (example `boot D:\5000TEST.BIN`) - loads a
-  file from SD into DRAM and jumps to it (`Boot File %s 0x%x`,
-  `boot Addr = %x`). Execute arbitrary code without flashing:
-  a softmod path if the shell is reachable.
-- Memory/file primitives: `dump`, `fill`, `search`, `read`
-  (file to DRAM), `write` (file to card), `regdump`, `ver`.
-- Raw flash primitives: `nanderase`, `nanderase all`,
-  `nanddetect`, `nandpr/nandpw` (physical page r/w),
-  `nandlr/nandrr` (logical page r/w), `rsvrd/rsvwr/rsver`
-  (reserved-block r/w/erase), `nandRawCWrite`, plus the SPI
-  mirror set (`spipr/spipw/spier`, `spiFwWrite`).
+The live path is the USB vendor ISP protocol (iCatch FRM):
+- `ispDoFunction` dispatcher at ~0x80047b30 reads an opcode from
+  a request struct, bounds-checks < 21, and jump-tables at
+  0x800e33f0. Strings name the ops: `NAND_DETECT`,
+  `NAND_RSV_ALLOCATE`, `NAND_RSV_A_FORMAT`, `NAND_RSV_B_FORMAT`,
+  `NAND_LOGICAL_FORMAT`, `NAND_PHYSICAL_FORMAT`,
+  `NAND_TOTAL_ERASE`, `FwWrite start/end`, `FW%d write %u/%u KB`.
+- `usbVNDR*` strings (`usbVNDRISPJump`, `usbVNDRReqNandDetect`)
+  tie it to USB vendor requests.
+- `Card ISP` strings (`Card ISP Version`, `isp file :%s`,
+  `***** Card ISP complete!*****`) mark the SD burn path that
+  the app reboots into after its own signature check passes.
 
-Signature status: NONE found. The burn function (~0x80051xxx)
-validates the SUNP BURN FILE/HDR 1/2/3 structure and the HDR2
-`060916:build<sign>a?/b?` record names (which are structural,
-not cryptographic checks), then writes and does a readback
-compare - `verify %d %d`, `verify err at ofs=0x%x`, `FW
-verified`, `RawC verified`. There are no RSA/SHA/mbedtls
-strings anywhere in head. `NAND rsv header err(sig)` refers to
-the reserved-block header signature field, unrelated to update
-files. The `isp` path almost certainly burns unsigned/modified
-images; `boot` almost certainly runs unsigned binaries.
+Signature status in head: NONE. The burn function (~0x80051xxx)
+validates `SUNP BURN FILE`/HDR 1/2/3 structure and HDR2
+`060916:build<sign>a?/b?` record names (structural checks,
+not crypto), then does write + readback compare
+(`verify err at ofs=0x%x`, `FW verified`, `RawC verified`).
+No RSA/SHA/mbedtls strings exist in head.
 
-Unverified, needs hardware: whether the UART pins are exposed
-(teardown), how the shell is entered (auto at boot? key combo?),
-whether `isp` accepts FPUPDATE.DAT directly or wants the split
-.BRN parts, and whether `boot` loads at a fixed DRAM address
-(sysboot docs suggest e.g. 0xa1000000).
-
-Other bootstrap directions (still open): the USB ISP/FRM button
-combo from the V50 family, and RAM-patching the running verifier
-via the shell's `fill` once UART is up.
+Consequence: any route that reaches the USB ISP dispatcher or
+Card ISP burns unsigned images. The V50 family exposed FRM over
+USB without soldering. Untested here: whether the mini Evo USB
+stack accepts vendor requests, needs a mode flag, or hides the
+interface. Fallback remains UART (`fill` can RAM-patch, but no
+`go`/`jump`/`isp`/`boot` command exists, so exec via the shell
+alone is limited).
 
 `iab_generate_signature_check_data` (~0x80309100) strings:
 `iab_signature_verify`, `iab_get_public_key`,
