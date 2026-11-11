@@ -42,12 +42,11 @@ printer in the boot path, this mod skips that block with a
 single-instruction patch in the PreBoot-1 stage. Runtime printing is
 untouched.
 
-`film-wkw`: an experimental Wong Kar-wai-inspired film look. It patches
-the color parameters of one stock film-effect slot, so one of the ten
-effects in the dial menu gets a warm, graded tone instead of its stock
-look. Iteration 1: the exact parameter semantics are still being tuned,
-so treat it as a test patch. Cycle through the film effects on the
-camera to find which slot changed.
+`film-wkw`: an experimental Wong Kar-wai-inspired film look. It reduces
+the film-effect dial to two positions: NORMAL and the WKW grade. Stock
+effects 2-9 become unreachable from the dial but remain in the
+firmware. Iteration 1: the exact tint parameter semantics are still
+being tuned, so treat it as a test patch. Lens effects are untouched.
 
 Details in `tools/mods.py` and `docs/research.md`.
 

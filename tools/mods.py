@@ -62,27 +62,44 @@ MODS = {
     # "Wong Kar-wai" film effect, iteration 1.
     #
     # Film effects are parameter combos applied by IQ_FilmEffectModeSet
-    # (0x80360a04) via 8 param-class setters. Effect slot 4 uses
-    # P5 mode 4 + P7 mode 3. P5 writes a tint block at 0x808b2e4c whose
-    # fields feed ISP params 0x2a003 (x) and 0x2a004 (y) through the
-    # apply path at 0x80360f80.
+    # (0x80360a04) via 8 param-class setters. The tint block P5 writes
+    # at 0x808b2e4c feeds ISP params 0x2a003 (x) and 0x2a004 (y) through
+    # the apply path at 0x80360f80.
     #
-    # P5-mode-4 case (vaddr 0x803607fc..0x8036082f) writes:
-    #     x = 0xf6 (246)  -> ISP 0x2a003
-    #     y = 0x08        -> ISP 0x2a004
-    #     tint bytes @0x1c-0x1f = 0
+    # This mod does three things:
     #
-    # Exact semantics of x/y are unverified (likely Cb/Cr-domain tint
-    # or hue/saturation gains). v1 deliberately picks a strong warm
-    # shift (x=128, y=64) so the changed effect slot is easy to spot:
-    # cycle the 10 film effects on-camera and note which one changed.
-    # Tune toward the WKW grade (warm orange highlights, cool teal
-    # shadows) on the next iterations once semantics are confirmed.
+    # 1. Tune the P5-mode-4 constants toward a warm WKW grade
+    #    (vaddr 0x8036080c/0x80360810): x 246->128, y 8->64. Semantics
+    #    are unverified (likely Cb/Cr tint or hue/sat gain); v1 is a
+    #    strong shift so the look is obviously different.
+    #
+    # 2. Repoint effect slot 1 to the WKW combo (vaddr 0x80360ab8/
+    #    0x80360ac0/0x80360ac4): stock slot 1 was P4=1,P5=1,P7=1; now
+    #    P4=0 (neutral reset), P5=4 (our tint), P7=3. WKW sits at dial
+    #    position 1, right after NORMAL at position 0.
+    #
+    # 3. Limit the film-effect dial to two slots. The dial handlers
+    #    wrap index +0x19 at 9: decrement wraps 0->9 (vaddr 0x801e1914,
+    #    now 0->1) and increment continues while idx<9 (vaddr
+    #    0x801e1a9c, now idx<1). Result: NORMAL <-> WKW only.
+    #
+    # Slots 2-9 still exist in the dispatcher but are unreachable via
+    # the dial. Lens effects (field +0x18) are untouched.
     "film-wkw": [
         Patch(0x36080c, "f6000424", "80000424",
               "P5-m4 x: 246 -> 128 (ISP 0x2a003)"),
         Patch(0x360810, "08000324", "40000324",
               "P5-m4 y: 8 -> 64 (ISP 0x2a004)"),
+        Patch(0x360ab8, "01000424", "00000424",
+              "slot1 P4 arg: 1 -> 0 (neutral)"),
+        Patch(0x360ac0, "01000424", "04000424",
+              "slot1 P5 arg: 1 -> 4 (WKW tint)"),
+        Patch(0x360ac4, "01000424", "03000424",
+              "slot1 P7 arg: 1 -> 3"),
+        Patch(0x1e1914, "09000324", "01000324",
+              "dial decrement wrap: 0->9 becomes 0->1"),
+        Patch(0x1e1a9c, "0900432c", "0100432c",
+              "dial increment bound: idx<9 becomes idx<1"),
     ],
 }
 

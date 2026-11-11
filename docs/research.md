@@ -269,3 +269,15 @@ is unverified; find it on camera by cycling all effects.
 Pattern-overlay resources (P2 modes) live in A:/RO_RES/PATTERN/ as
 .yuv + .y weight pairs (sepia, rough, colors, fisheye, heavy, LIGHT
 variants) at 320x240 and 800x608, some LZ4-compressed.
+
+### film-wkw implementation
+
+WKW lives at slot 1 (right after NORMAL), not slot 4. Effect-1's case
+at 0x80360ab4 is repointed: P4 arg 1->0 (neutral), P5 arg 1->4 (our
+tint), P7 arg 1->3. The dial is limited to 2 slots via the index
+handlers: +0x19 is the film-effect index, +0x18 is the lens-effect
+index (left alone). Decrement handler wraps idx 0->9 at 0x801e1914,
+patched to 0->1. Increment handler continues while idx<9 at
+0x801e1a9c, patched to idx<1. Slots 2-9 remain in the dispatcher but
+are unreachable from the dial; a saved index above 1 could still
+activate one once until the dial is turned.
