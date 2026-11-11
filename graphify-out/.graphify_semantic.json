@@ -1,0 +1,729 @@
+{
+  "nodes": [
+    {
+      "id": "readme_instax_evo_cli",
+      "label": "instax-evo one-command entry point",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L22,L85",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "rationale": "Unpacks stock firmware, applies camera mods, repacks a flashable image in one command with no dependencies beyond Python 3."
+    },
+    {
+      "id": "readme_fpupdate_mod_dat",
+      "label": "out/FPUPDATE_MOD.DAT build output",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L27,L66",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_stock_firmware_v109",
+      "label": "stock FPUPDATE.DAT firmware v1.09",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L25,L86",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_inspect_py",
+      "label": "tools/inspect.py",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L56,L64",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_carve_py",
+      "label": "tools/carve.py",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L57,L65",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_repack_py",
+      "label": "tools/repack.py",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L66",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_fat_py",
+      "label": "tools/fat.py",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L67-L69,L73",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_fatfs_py",
+      "label": "tools/fatfs.py",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L73",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_sunp_py",
+      "label": "tools/sunp.py SUNP parser/repack",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L72",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_snappy_py",
+      "label": "tools/snappy.py",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L74",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_mods_py",
+      "label": "tools/mods.py mod table",
+      "file_type": "code",
+      "source_file": "README.md",
+      "source_location": "L51,L75",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_fpupdate_dat",
+      "label": "FPUPDATE.DAT v1.09 firmware image",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": "L11,L19-L48",
+      "source_url": "https://www.instax.com/mini_evo/en/support/firmware/firmware.html",
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_sunp_burn_file",
+      "label": "SUNP BURN FILE container format",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_hdr1_partition_table",
+      "label": "HDR1 partition table",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_hdr2_xor_entries",
+      "label": "HDR2 XOR-obfuscated entries",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_signature_trailer",
+      "label": "Signature trailer (stale after mods)",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_fata_fatb",
+      "label": "FAT16 A: and B: partitions",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_threadx_mips",
+      "label": "ThreadX RTOS on MIPS32 4Kx",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_printer_boot_skip",
+      "label": "printer-boot-skip mod",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_film_wkw",
+      "label": "film-wkw mod (Wong Kar-wai look)",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_iq_filmeffect",
+      "label": "IQ_FilmEffectModeSet dispatcher",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_p5_tint_block",
+      "label": "P5 tint block / ISP params 0x2a003-6",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_param_setters_p1_p8",
+      "label": "P1-P8 param-class setters",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_dial_handlers",
+      "label": "Dial index wrap handlers (+0x18/+0x19)",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_pattern_overlays",
+      "label": "PATTERN overlay resources",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_fujifile_protocol",
+      "label": "FujiFile BLE protocol",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_upload_pic_cmds",
+      "label": "UPLOAD_PIC command family",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_gatt_dispatcher",
+      "label": "App-command dispatcher + jump tables",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_ble_pairing",
+      "label": "BLE numeric-comparison pairing",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "research_snappy_sfn",
+      "label": "Snappy SFN/SST resources",
+      "file_type": "document",
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_build_pipeline",
+      "label": "instax-evo build pipeline",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_brick_risk",
+      "label": "Brick risk warning",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "readme_sd_install",
+      "label": "microSD FAT32 install path",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "readme_instax_evo_cli",
+      "target": "readme_carve_py",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": "L25-L27",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_instax_evo_cli",
+      "target": "readme_mods_py",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": "L26,L51",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_instax_evo_cli",
+      "target": "readme_repack_py",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": "L26-L27",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_instax_evo_cli",
+      "target": "readme_fpupdate_mod_dat",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_instax_evo_cli",
+      "target": "readme_stock_firmware_v109",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_carve_py",
+      "target": "readme_sunp_py",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "README.md",
+      "source_location": "L65,L72",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_repack_py",
+      "target": "readme_sunp_py",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "README.md",
+      "source_location": "L66,L72",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_fat_py",
+      "target": "readme_fatfs_py",
+      "relation": "calls",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "README.md",
+      "source_location": "L67-L73",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_fpupdate_mod_dat",
+      "target": "research_fpupdate_dat",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.9,
+      "source_file": "README.md",
+      "source_location": "L27,L31-L32",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_stock_firmware_v109",
+      "target": "research_fpupdate_dat",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "README.md",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_build_pipeline",
+      "target": "research_sunp_burn_file",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_build_pipeline",
+      "target": "research_printer_boot_skip",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_build_pipeline",
+      "target": "research_film_wkw",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "readme_sd_install",
+      "target": "readme_brick_risk",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_sunp_burn_file",
+      "target": "research_hdr1_partition_table",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_sunp_burn_file",
+      "target": "research_hdr2_xor_entries",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_sunp_burn_file",
+      "target": "research_fata_fatb",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_sunp_burn_file",
+      "target": "research_signature_trailer",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_sunp_burn_file",
+      "target": "research_threadx_mips",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_iq_filmeffect",
+      "target": "research_param_setters_p1_p8",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_iq_filmeffect",
+      "target": "research_p5_tint_block",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_film_wkw",
+      "target": "research_p5_tint_block",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_film_wkw",
+      "target": "research_dial_handlers",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_film_wkw",
+      "target": "research_iq_filmeffect",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_param_setters_p1_p8",
+      "target": "research_pattern_overlays",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_fujifile_protocol",
+      "target": "research_gatt_dispatcher",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_fujifile_protocol",
+      "target": "research_upload_pic_cmds",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_fujifile_protocol",
+      "target": "research_ble_pairing",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_fata_fatb",
+      "target": "research_pattern_overlays",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_fata_fatb",
+      "target": "research_snappy_sfn",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "research_signature_trailer",
+      "target": "readme_brick_risk",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "instax_evo_build_pipeline",
+      "label": "instax-evo build pipeline (download, carve, mod, repack)",
+      "nodes": [
+        "readme_instax_evo_cli",
+        "readme_stock_firmware_v109",
+        "readme_carve_py",
+        "readme_mods_py",
+        "readme_repack_py",
+        "readme_fpupdate_mod_dat"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.9,
+      "source_file": "README.md"
+    },
+    {
+      "id": "film_effect_system",
+      "label": "Film effect system",
+      "nodes": [
+        "research_iq_filmeffect",
+        "research_param_setters_p1_p8",
+        "research_p5_tint_block",
+        "research_dial_handlers",
+        "research_film_wkw"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md"
+    },
+    {
+      "id": "ble_photo_transfer",
+      "label": "BLE photo transfer path",
+      "nodes": [
+        "research_fujifile_protocol",
+        "research_gatt_dispatcher",
+        "research_upload_pic_cmds",
+        "research_ble_pairing"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/research.md"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

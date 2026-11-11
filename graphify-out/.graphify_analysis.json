@@ -1,0 +1,264 @@
+{
+  "communities": {
+    "0": [
+      "struct",
+      "tools_fat",
+      "tools_fat_main",
+      "tools_fatfs",
+      "tools_fatfs_entry",
+      "tools_fatfs_entry_init",
+      "tools_fatfs_entry_is_dir",
+      "tools_fatfs_faterror",
+      "tools_fatfs_fatimage",
+      "tools_fatfs_fatimage_chain",
+      "tools_fatfs_fatimage_cluster_off",
+      "tools_fatfs_fatimage_fat_get",
+      "tools_fatfs_fatimage_fat_set",
+      "tools_fatfs_fatimage_find",
+      "tools_fatfs_fatimage_init",
+      "tools_fatfs_fatimage_listdir",
+      "tools_fatfs_fatimage_read",
+      "tools_fatfs_fatimage_read_cluster",
+      "tools_fatfs_fatimage_scan_dir",
+      "tools_fatfs_fatimage_write",
+      "tools_fatfs_py_exception",
+      "tools_fatfs_u16",
+      "tools_fatfs_u32"
+    ],
+    "1": [
+      "docs_research_dial_handlers",
+      "docs_research_fata_fatb",
+      "docs_research_film_wkw",
+      "docs_research_hdr1_partition_table",
+      "docs_research_hdr2_xor_entries",
+      "docs_research_iq_filmeffect",
+      "docs_research_p5_tint_block",
+      "docs_research_param_setters_p1_p8",
+      "docs_research_pattern_overlays",
+      "docs_research_printer_boot_skip",
+      "docs_research_signature_trailer",
+      "docs_research_snappy_sfn",
+      "docs_research_sunp_burn_file",
+      "docs_research_threadx_mips",
+      "readme_brick_risk",
+      "readme_build_pipeline",
+      "readme_sd_install"
+    ],
+    "2": [
+      "docs_research_fpupdate_dat",
+      "json",
+      "readme_fpupdate_mod_dat",
+      "readme_instax_evo_cli",
+      "readme_mods_py",
+      "readme_stock_firmware_v109",
+      "sys",
+      "tools_carve",
+      "tools_carve_carve",
+      "tools_carve_main",
+      "tools_repack",
+      "tools_repack_main",
+      "tools_repack_repack",
+      "tools_sunp_build"
+    ],
+    "3": [
+      "hashlib",
+      "instax_evo",
+      "instax_evo_cmd_build",
+      "instax_evo_cmd_catalog",
+      "instax_evo_cmd_inspect",
+      "instax_evo_cmd_unpack",
+      "instax_evo_ensure_firmware",
+      "os",
+      "tools_mods",
+      "tools_mods_apply_mods",
+      "tools_mods_patch",
+      "tools_mods_patch_init",
+      "urllib_request"
+    ],
+    "4": [
+      "tools_sunp",
+      "tools_sunp_bpb_info",
+      "tools_sunp_fat_size",
+      "tools_sunp_parse_header",
+      "tools_sunp_parts",
+      "tools_sunp_py_exception",
+      "tools_sunp_sunperror",
+      "tools_sunp_u16",
+      "tools_sunp_u32"
+    ],
+    "5": [
+      "asyncio",
+      "bleak",
+      "tools_dev_btprobe",
+      "tools_dev_btprobe_main",
+      "tools_dev_btprobe_main_mk_handler",
+      "tools_dev_btprobe_main_mk_handler_h",
+      "tools_dev_btprobe_main_poke"
+    ],
+    "6": [
+      "tools_inspect",
+      "tools_inspect_hdr_kind",
+      "tools_inspect_main",
+      "tools_inspect_scan",
+      "tools_inspect_u32"
+    ],
+    "7": [
+      "docs_research_ble_pairing",
+      "docs_research_fujifile_protocol",
+      "docs_research_gatt_dispatcher",
+      "docs_research_upload_pic_cmds"
+    ],
+    "8": [
+      "tools_snappy",
+      "tools_snappy_compress",
+      "tools_snappy_decompress",
+      "tools_snappy_emit_literal"
+    ],
+    "9": [
+      "readme_sunp_py"
+    ]
+  },
+  "cohesion": {
+    "0": 0.20948616600790515,
+    "1": 0.1323529411764706,
+    "2": 0.24175824175824176,
+    "3": 0.24358974358974358,
+    "4": 0.5277777777777778,
+    "5": 0.2857142857142857,
+    "6": 0.7,
+    "7": 0.5,
+    "8": 0.6666666666666666,
+    "9": 1.0
+  },
+  "gods": [
+    {
+      "id": "tools_fatfs_fatimage",
+      "label": "FatImage",
+      "degree": 14
+    },
+    {
+      "id": "tools_fat_main",
+      "label": "main()",
+      "degree": 7
+    },
+    {
+      "id": "tools_carve_carve",
+      "label": "carve()",
+      "degree": 6
+    },
+    {
+      "id": "tools_sunp_u32",
+      "label": "u32()",
+      "degree": 6
+    },
+    {
+      "id": "tools_sunp_parts",
+      "label": "parts()",
+      "degree": 6
+    },
+    {
+      "id": "docs_research_sunp_burn_file",
+      "label": "SUNP BURN FILE container format",
+      "degree": 6
+    },
+    {
+      "id": "tools_fatfs_faterror",
+      "label": "FatError",
+      "degree": 5
+    },
+    {
+      "id": "tools_fatfs_u16",
+      "label": "u16()",
+      "degree": 5
+    },
+    {
+      "id": "tools_inspect_main",
+      "label": "main()",
+      "degree": 5
+    },
+    {
+      "id": "tools_sunp_sunperror",
+      "label": "SunpError",
+      "degree": 5
+    }
+  ],
+  "surprises": [
+    {
+      "source": "stock FPUPDATE.DAT firmware v1.09",
+      "target": "FPUPDATE.DAT v1.09 firmware image",
+      "source_files": [
+        "README.md",
+        "docs/research.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "semantically_similar_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; semantically similar concepts with no structural link"
+    },
+    {
+      "source": "out/FPUPDATE_MOD.DAT build output",
+      "target": "FPUPDATE.DAT v1.09 firmware image",
+      "source_files": [
+        "README.md",
+        "docs/research.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "instax-evo build pipeline",
+      "target": "SUNP BURN FILE container format",
+      "source_files": [
+        "README.md",
+        "docs/research.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "implements",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "Signature trailer (stale after mods)",
+      "target": "Brick risk warning",
+      "source_files": [
+        "docs/research.md",
+        "README.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "rationale_for",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "instax-evo build pipeline",
+      "target": "printer-boot-skip mod",
+      "source_files": [
+        "README.md",
+        "docs/research.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `main()` connect `Community 0` to `Community 2`, `Community 3`?",
+      "why": "High betweenness centrality (0.065) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 3 inferred relationships involving `main()` (e.g. with `.listdir()` and `.read()`) actually correct?",
+      "why": "`main()` has 3 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `tools/sunp.py SUNP parser/repack`, `tools/mods.py mod table`, `HDR1 partition table` to the rest of the system?",
+      "why": "12 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 1` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.1323529411764706 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

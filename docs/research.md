@@ -281,3 +281,67 @@ patched to 0->1. Increment handler continues while idx<9 at
 0x801e1a9c, patched to idx<1. Slots 2-9 remain in the dispatcher but
 are unreachable from the dial; a saved index above 1 could still
 activate one once until the dial is turned.
+
+### Film-effect internals, addresses worth keeping
+
+Dispatcher `IQ_FilmEffectModeSet` at 0x80360a04:
+
+- jump table at 0x804d7e30, 10 entries, bound check `a0 < 10`
+- case addresses: mode0 0x80360a84, mode1 0x80360ab4,
+  mode2 0x80360adc, mode3 0x80360b04, mode4 0x80360b1c,
+  mode5 0x80360b2c, mode6 0x80360b3c, mode7 0x80360b54,
+  mode8 0x80360b74, mode9 0x80360a94
+- callers (jal sites): 0x801bf3f0 (combined lens+film setter,
+  writes struct +0x18/+0x19 then calls 0x803603d0 + 0x80360a04),
+  0x801bf674 (film-only setter, writes +0x19 then calls
+  0x80360a04), 0x80361930
+
+P5 (0x80360770) sub-dispatch: bound `a0 < 7`, jump table
+0x804d7dfc. Tint block at 0x808b2e4c: u32 mode @+0, u32 @+4/+8
+(alt layout), bytes @+0xc..0xf (alt layout), u32 flag @+0x10,
+u32 x @+0x14, u32 y @+0x18, 4 tint bytes @+0x1c..0x1f. Observed
+per-mode values:
+
+| P5 mode | written values                              |
+|---------|---------------------------------------------|
+| 1       | flag=1, x=0, y=0, tint=[0x36,0,0,0x36]      |
+| 2       | flag=1, x=0, y=0, tint=[0x53,0,0,0x53]      |
+| 3       | flag=1, x=0, y=0, tint=[0x13,0,0,0x13]      |
+| 4       | flag=1, x=246, y=8, tint=[0,0,0,0]          |
+| 5       | flag=1, x=0, y=0, tint=[0,0,0,0] (grayscale)|
+| 6       | flag=1, partial: byte@+0x1f=0x56 seen       |
+
+P7 (0x803608e8) sub-dispatch: bound `a0 < 6`, jump table
+0x804d7e18. Writes {u32 mode @0x2e9c, byte param @+4}: observed
+bytes 6, 3, ... (small enum, likely processing-type selector).
+
+P3 (0x80360614): writes {u32 mode @0x2e24, sbyte @+4} with param
+values 0x50 (mode 3), -0x74 (mode 2), 0x78 (mode 1); mode 0
+writes zero. Contrast-like single signed value.
+
+P4 (0x803606a0): writes block at 0x2e34 with fields
+{u32 @0, u32 @4, u32 @8, u32 @0xc, u32 @0x10, byte @0x14};
+mode 3 writes {1,4,8,3,arg,arg}, mode 2 writes {1,4,8,3..,arg}.
+
+P8 (0x803609ac): writes {u32 @0x2eac+8, u32 @+0xc}; modes 1/2
+store 0x1e in +0xc, else copies a global.
+
+P1 (0x803604d8): writes {u32 @0x2ddc, mode @0x2e14, bytes +4/+5}.
+
+Apply path 0x80360f80 reads the 0x2e4c block and pushes params
+to the ISP through 0x803c0f6c(id, val) / 0x803c13a4:
+x -> id 0x2a003, y -> id 0x2a004, pointer to the 4-byte tint
+array -> id 0x2a006. A second layout branch at 0x80361064 uses
+fields +4/+8 and the byte array at 0x2e58 (= block +0xc). A
+second writer around 0x80360180 fills the alternate layout,
+so the same struct serves two param encodings.
+
+UI state struct: `lw -0x67a0(0x8051)` = pointer at 0x80509860.
+Field +0x18 = lens-effect index, +0x19 = film-effect index,
++0x29 read by the dial handler path. Dial decrement handler at
+0x801e18fc (wraps idx 0->9 via `addiu $v1,$zero,9` at
+0x801e1914); dial increment handler at 0x801e1a8c (continues
+while idx<9 via `sltiu $v1,$v0,9` at 0x801e1a9c). Parallel
+handlers for the lens index (+0x18) sit at 0x801e19b8 and
+0x801e1b7c with the same wrap pattern; film-wkw leaves them
+alone so lens effects keep all 10 positions.
